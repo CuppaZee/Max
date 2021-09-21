@@ -1,0 +1,39 @@
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/react-native-unimodules/cocoapods.rb'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+platform :ios, '11.0'
+
+target 'CuppaZee' do
+  use_unimodules!
+  config = use_native_modules!
+
+  use_react_native!(:path => config["reactNativePath"])
+
+  # Uncomment the code below to enable Flipper.
+  #
+  # You should not install Flipper in CI environments when creating release
+  # builds, this will lead to significantly slower build times.
+  #
+  # Note that if you have use_frameworks! enabled, Flipper will not work.
+  #
+  # use_flipper!({ 'Flipper' => '0.108.0', 'Flipper-Folly' => '2.6.7' })
+  #  post_install do |installer|
+  #    flipper_post_install(installer)
+  #  end
+
+ pre_install do |installer|
+   fix_mapbox_events(installer)
+ end
+
+ def fix_mapbox_events(installer)
+   installer.pod_targets.each do |pod|
+     if pod.name == 'MapboxMobileEvents'
+       def pod.build_type;
+         Pod::BuildType.dynamic_framework
+       end
+     end
+   end
+ end
+
+end
