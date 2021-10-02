@@ -1,4 +1,3 @@
-import { Button, Layout, Text, useTheme } from "@ui-kitten/components";
 import * as React from "react";
 import useCuppaZeeRequest from "../../hooks/useCuppaZeeRequest";
 import useComponentSize from "../../hooks/useComponentSize";
@@ -16,22 +15,15 @@ import Icon from "../../components/Common/Icon";
 import { AutoMap, Icons, Layer, Marker, Source } from "../../components/Map/Map";
 import useDB from "../../hooks/useDB";
 import { NavProp } from "../../navigation";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { Box, Text, Heading, Button } from "native-base";
 
 type Bouncer = (MunzeeSpecialBouncer | MunzeeSpecial) & {
   hash: string;
   distance: number;
   direction: string;
   distanceStr: string;
-  // location?: {
-  //   record?: {
-  //     name: string;
-  //     latitude: number;
-  //     longitude: number;
-  //     countryCode: string;
-  //   };
-  //   distance: number;
-  // };
-  // timezone: string[];
+  heading: number;
 };
 
 interface NearbySettings {
@@ -72,7 +64,6 @@ export default function NearbyScreen() {
   const [error, setError] = React.useState("");
   const locationRef = React.useRef<{ latitude: number; longitude: number } | null>(null);
   const [size, onLayout] = useComponentSize();
-  const theme = useTheme();
   const [settings, setSettings] = React.useState<NearbySettings>();
   const [permissionError, setPermissionError] = React.useState(false);
   const db = useDB();
@@ -124,7 +115,7 @@ export default function NearbyScreen() {
           accuracy: loc.coords.accuracy,
           token,
         });
-      } catch(e) {
+      } catch(e: any) {
         setError(e.toString());
         setSettings({
           latitude: 0,
@@ -135,48 +126,73 @@ export default function NearbyScreen() {
     })();
   }, []);
 
+  const headerHeight = useHeaderHeight();
+
   if (permissionError) {
     return (
-      <Layout style={{ flex: 1 }} onLayout={onLayout}>
-        <Text category="h6">You must accept location permissions to use this page.</Text>
-      </Layout>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        style={{ flex: 1 }}
+        onLayout={onLayout}>
+        <Heading fontSize="md">You must accept location permissions to use this page.</Heading>
+      </Box>
     );
   }
 
   if (!size) {
     return (
-      <Layout style={{ flex: 1 }} onLayout={onLayout}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        style={{ flex: 1 }}
+        onLayout={onLayout}>
         <Loading data={[data]} />
         <Text>Loading Size...</Text>
-      </Layout>
+      </Box>
     );
   }
 
   if (!settings) {
     return (
-      <Layout style={{ flex: 1 }} onLayout={onLayout}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        style={{ flex: 1 }}
+        onLayout={onLayout}>
         <Loading data={[data]} />
         <Text>Loading Settings...</Text>
-      </Layout>
+      </Box>
     );
   }
 
   if (!data.isFetched || !size || !settings) {
     return (
-      <Layout style={{ flex: 1 }} onLayout={onLayout}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        style={{ flex: 1 }}
+        onLayout={onLayout}>
         <Loading data={[data]} />
-      </Layout>
+      </Box>
     );
   }
   return (
-    <Layout onLayout={onLayout} style={{ flex: 1, flexDirection: "row" }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4 }}>
+    <Box
+      bg="regularGray.100"
+      _dark={{ bg: "regularGray.900" }}
+      onLayout={onLayout}
+      style={{ flex: 1, flexDirection: "row" }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 4, paddingTop: headerHeight + 4 }}>
         {data.data?.endpointsDown
           .filter(i => i.endpoint.startsWith("/munzee/specials"))
           .map(endpoint => (
-            <Layout style={{ margin: 4, width: "100%" }}>
-              <Layout
-                level="2"
+            <Box style={{ margin: 4, width: "100%" }}>
+              <Box
+                bg="regularGray.200"
+                _dark={{ bg: "regularGray.800" }}
                 style={{
                   padding: 4,
                   borderRadius: 8,
@@ -184,17 +200,18 @@ export default function NearbyScreen() {
                   alignItems: "center",
                   justifyContent: "center",
                 }}>
-                <Text category="h6" style={{ textAlign: "center", maxWidth: "100%" }}>
+                <Heading fontSize="md" style={{ textAlign: "center", maxWidth: "100%" }}>
                   CuppaZee is currently unable to get data for {endpoint.label} from Munzee. These
                   bouncers may not show on this page.
-                </Text>
-              </Layout>
-            </Layout>
+                </Heading>
+              </Box>
+            </Box>
           ))}
         {(settings.accuracy === null || settings.accuracy > 50) && (
-          <Layout style={{ margin: 4, width: "100%" }}>
-            <Layout
-              level="2"
+          <Box style={{ margin: 4, width: "100%" }}>
+            <Box
+              bg="regularGray.200"
+              _dark={{ bg: "regularGray.800" }}
               style={{
                 padding: 4,
                 borderRadius: 8,
@@ -202,18 +219,19 @@ export default function NearbyScreen() {
                 alignItems: "center",
                 justifyContent: "center",
               }}>
-              <Text category="h6" style={{ textAlign: "center", maxWidth: "100%" }}>
+              <Heading fontSize="md" style={{ textAlign: "center", maxWidth: "100%" }}>
                 {settings.accuracy === null || settings.accuracy < 5000000
                   ? `CuppaZee couldn't get a very accurate location. You can drag the location marker, use the "Search" tool, or the "Move Location Here" button to pick a better location.`
                   : `CuppaZee was unable to get your location. You can drag the location marker, use the "Search" tool, or the "Move Location Here" button to pick a location.`}
-              </Text>
-            </Layout>
-          </Layout>
+              </Heading>
+            </Box>
+          </Box>
         )}
         {!!error && (
-          <Layout style={{ margin: 4, width: "100%" }}>
-            <Layout
-              level="2"
+          <Box style={{ margin: 4, width: "100%" }}>
+            <Box
+              bg="regularGray.200"
+              _dark={{ bg: "regularGray.800" }}
               style={{
                 padding: 4,
                 borderRadius: 8,
@@ -221,13 +239,13 @@ export default function NearbyScreen() {
                 alignItems: "center",
                 justifyContent: "center",
               }}>
-              <Text category="h6" style={{ textAlign: "center", maxWidth: "100%" }}>
+              <Heading fontSize="md" style={{ textAlign: "center", maxWidth: "100%" }}>
                 Something went a bit wrong: {error}
-              </Text>
-            </Layout>
-          </Layout>
+              </Heading>
+            </Box>
+          </Box>
         )}
-        <Layout style={{ height: 400, margin: 4, borderRadius: 8 }}>
+        <Box style={{ height: 400, margin: 4, borderRadius: 8 }}>
           <AutoMap
             onSearchSelect={ev => {
               setSettings({ ...settings, latitude: ev.latitude, longitude: ev.longitude });
@@ -242,8 +260,7 @@ export default function NearbyScreen() {
               <Button
                 onPress={() => setSettings({ ...settings, ...(locationRef.current ?? {}) })}
                 style={{ margin: 4 }}
-                size="small"
-                appearance="outline">
+                size="sm">
                 Move Location Here
               </Button>
             }
@@ -326,7 +343,7 @@ export default function NearbyScreen() {
               </View>
             </Marker>
           </AutoMap>
-        </Layout>
+        </Box>
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
           {data.data?.data
             .slice()
@@ -344,8 +361,9 @@ export default function NearbyScreen() {
                   maxWidth: "100%",
                   flexGrow: 1,
                 }}>
-                <Layout
-                  level="2"
+                <Box
+                  bg="regularGray.200"
+                  _dark={{ bg: "regularGray.800" }}
                   style={{
                     margin: 4,
                     flexDirection: "row",
@@ -360,36 +378,37 @@ export default function NearbyScreen() {
                     />
                   </View>
                   <View style={{ padding: 4, flex: 1 }}>
-                    <Text category="h6">
+                    <Heading fontSize="md">
                       {"mythological_munzee" in i
                         ? i.mythological_munzee.friendly_name
                         : db.getType(i.logo)?.name ?? i.logo.slice(49, -4)}
                       {"mythological_munzee" in i ? (
-                        <Text category="s1">
+                        <Heading fontSize="sm">
                           {" "}
                           {t("user_bouncers:by", {
                             username: i.mythological_munzee.creator_username,
                           })}
-                        </Text>
+                        </Heading>
                       ) : (
                         ""
                       )}
-                    </Text>
+                    </Heading>
 
-                    <Text category="s1">
+                    <Heading fontSize="sm">
                       {t("user_bouncers:host", {
                         name: i.friendly_name,
                         creator: i.full_url.split("/")[4],
                       })}
-                    </Text>
-                    <Text category="c1">
+                    </Heading>
+                    <Text fontSize="sm">
                       {t("user_bouncers:expires", {
                         time: dayjs(i.special_good_until * 1000).format("LTS"),
                       })}
                     </Text>
                   </View>
-                  <Layout
-                    level="4"
+                  <Box
+                    bg="regularGray.200"
+                    _dark={{ bg: "regularGray.800" }}
                     style={{
                       padding: 4,
                       borderTopRightRadius: 8,
@@ -398,10 +417,10 @@ export default function NearbyScreen() {
                       width: 80,
                       justifyContent: "center",
                     }}>
-                    <Text style={{ textAlign: "center" }} category="h6">
+                    <Heading style={{ textAlign: "center" }} fontSize="md">
                       {i.distanceStr}
-                    </Text>
-                    <Text style={{ textAlign: "center" }} category="s1">
+                    </Heading>
+                    <Heading style={{ textAlign: "center" }} fontSize="sm">
                       <Icon
                         name={
                           (
@@ -427,7 +446,7 @@ export default function NearbyScreen() {
                               | "S"
                           ]
                         }
-                        style={{ color: theme["text-basic-color"], height: 20, width: 20 }}
+                        style={{ height: 20, width: 20 }}
                       />
                       {t(
                         `common:direction_${
@@ -442,13 +461,13 @@ export default function NearbyScreen() {
                             | "s"
                         }` as const
                       )}
-                    </Text>
-                  </Layout>
-                </Layout>
+                    </Heading>
+                  </Box>
+                </Box>
               </Pressable>
             ))}
         </View>
       </ScrollView>
-    </Layout>
+    </Box>
   );
 }

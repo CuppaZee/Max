@@ -1,4 +1,5 @@
 import { GameID } from "@cuppazee/utils/lib";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { RouteProp, useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { Box } from "native-base";
@@ -31,12 +32,13 @@ export default function ClanBookmarksScreen() {
   ).game_id : new GameID().game_id;
   const [style] = useSetting(ClanPersonalisationAtom);
   const clans = useUserSetting("clans");
+  const headerHeight = useHeaderHeight();
   const isFocused = useIsFocused();
   if(!isFocused || !size) return <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} onLayout={onLayout} style={{ flex: 1 }} />
   return (
     <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} onLayout={onLayout} style={{ flex: 1 }}>
       <ClanPersonalisationModal />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4, paddingTop: headerHeight + 4 }}>
         <Tip
           wrapperStyle={{ margin: 4, width: 400, maxWidth: "100%", alignSelf: "center" }}
           id="clan_stats_customisation"
