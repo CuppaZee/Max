@@ -9,7 +9,7 @@ import BouncerOverviewConverter from "../../components/Bouncers/Data";
 import { BouncerIcon } from "../../components/Bouncers/Icon";
 import Icon from "../../components/Common/Icon";
 import Loading from "../../components/Loading";
-import useCuppaZeeRequest from "../../hooks/useCuppaZeeRequest";
+import useAPIData from "../../hooks/useAPIRequest";
 import useDB from "../../hooks/useDB";
 import useTitle from "../../hooks/useTitle";
 import { NavProp } from "../../navigation";
@@ -18,14 +18,18 @@ export default function BouncersScreen() {
   const { t } = useTranslation();
   useTitle(`${t("pages:tools_bouncers")}`);
   const nav = useNavigation<NavProp>();
-  const data = useCuppaZeeRequest<{
-    data: any;
-    endpointsDown: { label: string; endpoint: string }[];
-  }>("bouncers/overview", {});
+  const data = useAPIData<{
+    overview: { [key: string]: number };
+  }>({
+    endpoint: "/bouncer/overview",
+    method: "get",
+    params: {},
+  });
   const db = useDB();
   const d = React.useMemo(
-    () => (data.data ? BouncerOverviewConverter(db, data.data.data) : null),
-    [data.dataUpdatedAt]
+    () =>
+      data.data?.data?.overview ? BouncerOverviewConverter(db, data.data.data.overview) : null,
+    [data.dataUpdatedAt, db]
   );
   const headerHeight = useHeaderHeight();
 
@@ -46,7 +50,7 @@ export default function BouncersScreen() {
           alignItems: "flex-start",
           flexWrap: "wrap",
         }}>
-        {data.data?.endpointsDown
+        {/* {data.data?.endpointsDown
           .filter(i => i.endpoint.startsWith("/munzee/specials"))
           .map(endpoint => (
             <Box style={{ margin: 4, width: "100%" }}>
@@ -66,7 +70,7 @@ export default function BouncersScreen() {
                 </Heading>
               </Box>
             </Box>
-          ))}
+          ))} */}
         {d && d.uncategoriesTypes.length > 0 && (
           <View style={{ flexGrow: 1, width: 400, maxWidth: "100%", padding: 4 }}>
             <Box
@@ -76,7 +80,7 @@ export default function BouncersScreen() {
               <Heading fontSize="lg" style={{ textAlign: "center" }}>
                 Uncategorised
               </Heading>
-              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
                 {d?.uncategoriesTypes.map(t => (
                   <BouncerIcon count={d.counts[t]} icon={t} />
                 ))}
@@ -137,7 +141,11 @@ export default function BouncersScreen() {
                   ),
                 ].map(group => (
                   <View>
-                    {!!group && <Heading fontSize="md" textAlign="center">{group}</Heading>}
+                    {!!group && (
+                      <Heading fontSize="md" textAlign="center">
+                        {group}
+                      </Heading>
+                    )}
                     <View
                       style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
                       {c.types

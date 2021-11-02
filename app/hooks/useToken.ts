@@ -1,14 +1,14 @@
 import { useQuery } from "react-query";
 import { useAtom } from "jotai";
-import baseURL from "../baseURL";
+import {baseAPIURL} from "../baseURLs";
 import {useMemo} from "react";
 import { settingAtom } from "./useSetting";
 
-const getToken = async (teaken: string, user_id: number) => {
+const getToken = async (token: string, user_id: number) => {
   const response = await fetch(
-    `${baseURL}/auth/get/v2?teaken=${encodeURIComponent(
-      teaken
-    )}&user_id=${encodeURIComponent(user_id)}`
+    `${baseAPIURL}/auth/get?token=${encodeURIComponent(token)}&user_id=${encodeURIComponent(
+      user_id
+    )}`
   );
   return await response.json();
 };
@@ -20,12 +20,13 @@ export type AccountData = {
 };
 
 export const primaryAccountAtom = settingAtom<AccountData | null>(
-  "@cz3/accounts/primary",
+  "@cz3/auth/accounts/primary",
   null,
-  "replace"
+  "replace",
+  false
 );
 
-export const otherAccountsAtom = settingAtom<AccountData[]>("@cz3/accounts/other", [], "replace");
+export const otherAccountsAtom = settingAtom<AccountData[]>("@cz3/auth/accounts/other", [], "replace");
 
 export function useAccounts(): AccountData[] {
   const [primaryAccount] = useAtom(primaryAccountAtom);
@@ -36,7 +37,29 @@ export function useAccounts(): AccountData[] {
   return [];
 }
 
-export default function useToken(user_id?: number) {
+export enum TokenStatus {
+  Valid = "valid",
+  Expired = "expired",
+  Failed = "failed",
+  Loading = "loading",
+  Missing = "missing",
+}
+
+export interface AuthenticationResult {
+  access_token: string;
+  token_type: "Bearer";
+  expires: number;
+  expires_in: number;
+}
+
+export interface useTokenResponse {
+  status: TokenStatus;
+  user_id?: number;
+  token?: AuthenticationResult;
+  account: AccountData | null;
+}
+
+export default function useToken(user_id?: number): useTokenResponse {
   const [primaryAccount] = useAtom(primaryAccountAtom);
   const [otherAccounts] = useAtom(otherAccountsAtom);
   const account = useMemo(() => {
@@ -53,8 +76,17 @@ export default function useToken(user_id?: number) {
     }
   );
   return {
-    status: account ? (data.data?.executed_in ? (data.data?.data?.access_token ? "valid" : "expired") : (data.isLoading ? "loading" : "failed")) : "missing",
+    status: account
+      ? data.data?.executedIn
+        ? data.data?.data?.access_token
+          ? TokenStatus.Valid
+          : TokenStatus.Expired
+        : data.isLoading
+        ? TokenStatus.Loading
+        : TokenStatus.Failed
+      : TokenStatus.Missing,
     user_id: account?.user_id ?? user_id,
     token: data.data?.data,
+    account,
   };
 }

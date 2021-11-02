@@ -6,9 +6,9 @@ import {atomWithStorage} from "jotai/utils";
 
 export const store = new MMKV();
 
-const MergeStorage = (initialData: any) => ({
+const MergeStorage = (initialData: any, delayInit = true) => ({
   getItem: (key: string) => {
-    console.log(key);
+    console.log("~GETM", key);
     const jsonString = store.getString(key);
     if (!jsonString) return initialData;
     try {
@@ -26,11 +26,12 @@ const MergeStorage = (initialData: any) => ({
       store.delete(stringified);
     }
   },
-  delayInit: true,
+  delayInit,
 });
 
-const ReplaceStorage = (initialData: any) => ({
+const ReplaceStorage = (initialData: any, delayInit = true) => ({
   getItem: (key: string) => {
+    console.log("~GETR", key);
     const jsonString = store.getString(key);
     if (!jsonString) return initialData;
     try {
@@ -48,21 +49,17 @@ const ReplaceStorage = (initialData: any) => ({
       store.delete(stringified);
     }
   },
-  delayInit: true,
+  delayInit,
 });
 
-export function settingAtom<T>(key: string, initialData: T, loadMethod?: "merge" | "replace") {
+export function settingAtom<T>(key: string, initialData: T, loadMethod?: "merge" | "replace", delayInit?: boolean) {
   const method = loadMethod ?? ((typeof initialData === "object" && !Array.isArray(initialData)) ? "merge" : "replace");
+  console.log("~SA", key);
   return atomWithStorage<T>(
     key,
     initialData,
-    (method === "merge" ? MergeStorage : ReplaceStorage)(initialData),
-  )
-}
-
-export interface Setting<T> {
-  data: T;
-  loaded: boolean;
+    (method === "merge" ? MergeStorage : ReplaceStorage)(initialData, delayInit)
+  );
 }
 
 export const BuildAtom = settingAtom<number>(
@@ -109,13 +106,15 @@ export const ClanPersonalisationAtom = settingAtom<{
   }
 );
 
+export interface ClanOptions {
+  level: number;
+  share: boolean;
+  subtract: boolean;
+  shadow: boolean;
+};
+
 export const ClansAtom = settingAtom<{
-  [clan_id: string]: {
-    level: number;
-    share: boolean;
-    subtract: boolean;
-    shadow: boolean;
-  };
+  [clan_id: string]: ClanOptions;
 }>(
   "@cz3/clans",
   {}

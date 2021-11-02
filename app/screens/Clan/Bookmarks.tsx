@@ -3,11 +3,12 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { RouteProp, useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import dayjs from "dayjs";
 import { Box } from "native-base";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, View } from "react-native";
+import { InteractionManager, ScrollView, View } from "react-native";
 import ClanRequirementsTable from "../../components/Clan/Requirements";
 import ClanStatsTable from "../../components/Clan/Stats";
+import ClanStatsCard from "../../components/Clan/StatsV2";
 import { useSyncScrollViewController } from "../../components/Clan/SyncScrollView";
 import Select from "../../components/Common/Select";
 import Tip from "../../components/Common/Tip";
@@ -31,13 +32,31 @@ export default function ClanBookmarksScreen() {
     route.params?.month ? Number(route.params.month) - 1 : dayjs.mhqNow().month(),
   ).game_id : new GameID().game_id;
   const [style] = useSetting(ClanPersonalisationAtom);
+  const [ready, setReady] = React.useState(false);
   const clans = useUserSetting("clans");
   const headerHeight = useHeaderHeight();
-  const isFocused = useIsFocused();
-  if(!isFocused || !size) return <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} onLayout={onLayout} style={{ flex: 1 }} />
+  const [id] = useState(Math.floor(Math.random() * 1000));
+  useEffect(() => {
+    if (!ready) {
+      InteractionManager.runAfterInteractions(() => {
+        setReady(true);
+      })
+    }
+  }, [ready]);
+  if (!ready)
+    return (
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        onLayout={onLayout}
+        style={{ flex: 1 }}
+      />
+    );
+
+  console.log("~BOOKMARKS", id);
   return (
     <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} onLayout={onLayout} style={{ flex: 1 }}>
-      <ClanPersonalisationModal />
+      {/* <ClanPersonalisationModal /> */}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4, paddingTop: headerHeight + 4 }}>
         <Tip
           wrapperStyle={{ margin: 4, width: 400, maxWidth: "100%", alignSelf: "center" }}
@@ -56,13 +75,13 @@ export default function ClanBookmarksScreen() {
               scrollViewController={style.reverse ? undefined : scrollViewController}
             />
           </View>
-          {clans?.slice(0,1).map(i => (
+          {clans?.map(i => (
             <View
               key={i.clan_id}
               style={{
                 width: (size?.width ?? 0) > 800 ? "50%" : "100%",
               }}>
-              <ClanStatsTable
+              <ClanStatsCard
                 clan_id={i.clan_id}
                 game_id={game_id}
                 scrollViewController={style.reverse ? undefined : scrollViewController}
@@ -76,7 +95,7 @@ export default function ClanBookmarksScreen() {
             }}
           />
         </View>
-        <View style={{ width: "100%" }}>
+        {/* <View style={{ width: "100%" }}>
           <Select
             style={{ margin: 4 }}
             value={game_id.toString()}
@@ -97,7 +116,7 @@ export default function ClanBookmarksScreen() {
               })
               .reverse()}
           />
-        </View>
+        </View> */}
       </ScrollView>
     </Box>
   );

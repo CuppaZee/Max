@@ -17,8 +17,8 @@ export function InventoryIcon(data: UserInventoryItem) {
           </Box>
         </Pressable>
       )}>
-      <Popover.Content style={{ padding: 4 }}>
-        <Box bg="regularGray.400" _dark={{ bg: "regularGray.600" }}>
+      <Popover.Content>
+        <Box style={{ padding: 4 }} bg="regularGray.400" _dark={{ bg: "regularGray.600" }}>
           <Heading style={{ textAlign: "center" }} fontSize="lg">
             {data.amount.toLocaleString()}x {data.type?.name ?? data.name ?? data.icon ?? ""}
           </Heading>

@@ -1,5 +1,5 @@
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { Layout, Text, useTheme } from "@ui-kitten/components";
+import { useTheme } from "@ui-kitten/components";
 import dayjs from "dayjs";
 import * as React from "react";
 import useMunzeeRequest from "../../hooks/useMunzeeRequest";
@@ -15,6 +15,8 @@ import Icon from "../../components/Common/Icon";
 import useDB from "../../hooks/useDB";
 import { generateUserActivityData } from "@cuppazee/utils/lib";
 import { RootStackParamList } from "../../types";
+import { Text, Box, Heading } from "native-base";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 export default function PlayerChallengesScreen() {
   const { t } = useTranslation();
@@ -38,14 +40,20 @@ export default function PlayerChallengesScreen() {
       data.data?.data
         ? ChallengesConverter(db, generateUserActivityData(db, data.data?.data, {activity: new Set(), state: new Set(), category: new Set()}, "sohcah"))
         : null,
-    [data.dataUpdatedAt]
+    [data.dataUpdatedAt, db]
   );
+
+  const headerHeight = useHeaderHeight();
 
   if (!data.data || !d || !size) {
     return (
-      <Layout onLayout={onLayout} style={{ flex: 1 }}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        onLayout={onLayout}
+        style={{ flex: 1 }}>
         <Loading data={[data]} />
-      </Layout>
+      </Box>
     );
   }
 
@@ -54,10 +62,15 @@ export default function PlayerChallengesScreen() {
 
   if (challenge.size === "small")
     return (
-      <Layout onLayout={onLayout} style={{ flex: 1 }}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        onLayout={onLayout}
+        style={{ flex: 1 }}>
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
+            paddingTop: headerHeight,
             flexDirection: "row",
             alignItems: "flex-start",
             flexWrap: "wrap",
@@ -67,15 +80,17 @@ export default function PlayerChallengesScreen() {
             .sort((a, b) => b.completion.length - a.completion.length)
             .map(c => (
               <View style={{ width: 80, maxWidth: "100%", flexGrow: 1, padding: 4 }}>
-                <Layout
-                  level={c.completion.length > 0 ? "3" : "2"}
+                <Box
+                  bg={c.completion.length > 0 ? "regularGray.300" : "regularGray.200"}
+                  _dark={{ bg: c.completion.length > 0 ? "regularGray.700" : "regularGray.800" }}
                   style={{ alignItems: "center", borderRadius: 8 }}>
                   <TypeImage style={{ size: 32, margin: 8 }} icon={c.icon} />
-                  <Text numberOfLines={1} style={{ textAlign: "center" }} category="c1">
+                  <Text numberOfLines={1} style={{ textAlign: "center" }} fontSize="sm">
                     {c.name.includes(":") ? t(c.name as any) : c.name}
                   </Text>
-                  <Layout
-                    level={c.completion.length > 0 ? "4" : "2"}
+                  <Box
+                    bg={c.completion.length > 0 ? "regularGray.400" : "regularGray.200"}
+                    _dark={{ bg: c.completion.length > 0 ? "regularGray.600" : "regularGray.800" }}
                     style={{
                       padding: 2,
                       borderBottomRightRadius: 8,
@@ -86,26 +101,28 @@ export default function PlayerChallengesScreen() {
                       alignItems: "center",
                     }}>
                     {c.completion.length ? (
-                      <Text category="h4">{c.completion.length}</Text>
+                      <Heading fontSize="xl">{c.completion.length}</Heading>
                     ) : (
-                      <Icon
-                        style={{ height: 24, width: 24, color: theme["text-basic-color"] }}
-                        name="close"
-                      />
+                      <Icon style={{ height: 24, width: 24 }} name="close" />
                     )}
-                  </Layout>
-                </Layout>
+                  </Box>
+                </Box>
               </View>
             ))}
         </ScrollView>
-      </Layout>
+      </Box>
     );
 
   return (
-    <Layout onLayout={onLayout} style={{ flex: 1 }}>
+    <Box
+      bg="regularGray.100"
+      _dark={{ bg: "regularGray.900" }}
+      onLayout={onLayout}
+      style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
+          paddingTop: headerHeight,
           flexDirection: "row",
           alignItems: "flex-start",
           flexWrap: "wrap",
@@ -115,20 +132,24 @@ export default function PlayerChallengesScreen() {
           .sort((a, b) => b.completion.length - a.completion.length)
           .map(c => (
             <View style={{ width: 300, maxWidth: "100%", flexGrow: 1, padding: 4 }}>
-              <Layout
-                level={c.completion.length > 0 ? "3" : "2"}
+              <Box
+                bg={c.completion.length > 0 ? "regularGray.300" : "regularGray.200"}
+                _dark={{ bg: c.completion.length > 0 ? "regularGray.700" : "regularGray.800" }}
                 style={{ flexDirection: "row", alignItems: "center", borderRadius: 8 }}>
                 <TypeImage style={{ size: 48, margin: 8 }} icon={c.icon} />
                 <View style={{ paddingVertical: 8, flex: 1 }}>
-                  <Text category="h6">{c.name.includes(":") ? t(c.name as any) : c.name}</Text>
+                  <Heading fontSize="md">
+                    {c.name.includes(":") ? t(c.name as any) : c.name}
+                  </Heading>
                   <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                     {c.completion.map(i => (
                       <TypeImage icon={i.icon} style={{ size: 24 }} />
                     ))}
                   </View>
                 </View>
-                <Layout
-                  level={c.completion.length > 0 ? "4" : "2"}
+                <Box
+                  bg={c.completion.length > 0 ? "regularGray.400" : "regularGray.200"}
+                  _dark={{ bg: c.completion.length > 0 ? "regularGray.600" : "regularGray.800" }}
                   style={{
                     padding: 8,
                     borderBottomRightRadius: 8,
@@ -138,19 +159,14 @@ export default function PlayerChallengesScreen() {
                     width: 60,
                     alignItems: "center",
                   }}>
-                  <Text category="h4">
-                    {c.completion.length || (
-                      <Icon
-                        style={{ height: 24, width: 24, color: theme["text-basic-color"] }}
-                        name="close"
-                      />
-                    )}
-                  </Text>
-                </Layout>
-              </Layout>
+                  <Heading fontSize="xl">
+                    {c.completion.length || <Icon style={{ height: 24, width: 24 }} name="close" />}
+                  </Heading>
+                </Box>
+              </Box>
             </View>
           ))}
       </ScrollView>
-    </Layout>
+    </Box>
   );
 }

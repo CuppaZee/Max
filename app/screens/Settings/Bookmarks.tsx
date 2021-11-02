@@ -139,7 +139,7 @@ export default function AccountsScreen() {
                         }}
                       />
                       <Text style={{ flex: 1 }} category="h6">
-                        {i.username}
+                        {i.username} 
                       </Text>
                       <View>
                         <Button
@@ -308,10 +308,10 @@ export default function AccountsScreen() {
           style={{ margin: 4 }}
           onPress={async () => {
             if (clanBookmarks) {
-              setClanBookmarks(clanBookmarks);
+              await setClanBookmarks(clanBookmarks);
             }
             if (userBookmarks) {
-              setUserBookmarks(userBookmarks);
+              await setUserBookmarks(userBookmarks);
             }
             setSaved(true);
             setTimeout(() => {

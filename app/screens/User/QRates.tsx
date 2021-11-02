@@ -1,9 +1,9 @@
+import { useHeaderHeight } from "@react-navigation/elements";
 import { RouteProp, useRoute } from "@react-navigation/native";
-import { Layout, Text, useTheme } from "@ui-kitten/components";
 import dayjs from "dayjs";
-import { LinearGradient } from "expo-linear-gradient";
+import { Box, Heading, Progress, Text, useToken, ScrollView } from "native-base";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import TypeImage from "../../components/Common/TypeImage";
 import Loading from "../../components/Loading";
 import useComponentSize from "../../hooks/useComponentSize";
@@ -20,7 +20,7 @@ export default function PlayerCubimalsScreen() {
     { username: route.params?.username },
     route.params?.username !== undefined
   );
-  const data = useMunzeeRequest(
+  const data = useMunzeeRequest<any>(
     "qrates",
     {
       method: "get"
@@ -28,67 +28,76 @@ export default function PlayerCubimalsScreen() {
     user.data?.data?.user_id !== undefined,
     user.data?.data?.user_id
   );
-  const theme = useTheme();
+  const [success] = useToken("colors", ["success.500"]);
+  const headerHeight = useHeaderHeight();
 
   if (!data.isFetched || !size) {
     return (
-      <Layout onLayout={onLayout} style={{ flex: 1 }}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        onLayout={onLayout}
+        style={{ flex: 1, paddingTop: headerHeight }}>
         <Loading data={[data]} />
-      </Layout>
+      </Box>
     );
   }
   return (
-    <Layout onLayout={onLayout} style={{ flex: 1 }}>
+    <Box
+      bg="regularGray.100"
+      _dark={{ bg: "regularGray.900" }}
+      onLayout={onLayout}
+    flex={1}>
       <ScrollView
-        style={{ flex: 1 }}
+        flex={1}
         contentContainerStyle={{
           flexDirection: "row",
           alignItems: "flex-start",
           flexWrap: "wrap",
+          paddingTop: headerHeight,
         }}>
-        {data.data?.data?.qrates.map(q => (
+        {data.data?.data?.qrates.map((q: any) => (
           <View style={{ flexGrow: 1, width: 300, maxWidth: "100%", padding: 4 }}>
-            <Layout level="3" style={{ borderRadius: 8, padding: 4, alignItems: "center" }}>
+            <Box
+              bg="regularGray.200"
+              _dark={{ bg: "regularGray.800" }}
+              style={{ borderRadius: 8, padding: 4, alignItems: "center" }}>
               <TypeImage icon={q.logo.slice(51, -4)} style={{ size: 128 }} iconSize={128} />
-              <Text category="h5" style={{ textAlign: "center" }}>
+              <Heading fontSize="md" style={{ textAlign: "center" }}>
                 {q.name}
-              </Text>
-              <Text category="s1" style={{ textAlign: "center" }}>
+              </Heading>
+              <Heading fontSize="sm" style={{ textAlign: "center" }}>
                 {q.description}
-              </Text>
-              <Text category="s2" style={{ textAlign: "center" }}>
+              </Heading>
+              <Text fontSize="sm" style={{ textAlign: "center" }}>
                 Found: {dayjs.mhqParse(q.time_found).local().format("L LTS")} (Local)
               </Text>
-              <Text category="s2" style={{ textAlign: "center" }}>
+              <Text fontSize="sm" style={{ textAlign: "center" }}>
                 QRowbars Used: {q.qrowbars_used}/3
               </Text>
 
-              <Layout level="4" style={{ borderRadius: 8, alignSelf: "stretch", marginTop: 4 }}>
-                <LinearGradient
-                  start={[0, 0.5]}
-                  end={[1, 0.5]}
-                  locations={[0, q.progress / q.goal, q.progress / q.goal + 0.0001, 2]}
-                  colors={[
-                    theme["text-success-color"] + "66",
-                    theme["text-success-color"] + "66",
-                    "transparent",
-                    "transparent",
-                  ]}
-                  style={{
-                    padding: 4,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: theme["border-basic-color-1"],
-                  }}>
-                  <Text category="s1" style={{ textAlign: "center" }}>
+              <Box pt="1" w="100%">
+                <Progress size="2xl" rounded="md" value={(q.progress / q.goal) * 100} />
+                <Box
+                  position="absolute"
+                  top={1}
+                  left="0"
+                  right="0"
+                  bottom="0"
+                  style={{ justifyContent: "center", alignItems: "center" }}>
+                  <Heading
+                    position="absolute"
+                    w="100%"
+                    fontSize="sm"
+                    style={{ textAlign: "center" }}>
                     {q.progress}/{q.goal}
-                  </Text>
-                </LinearGradient>
-              </Layout>
-            </Layout>
+                  </Heading>
+                </Box>
+              </Box>
+            </Box>
           </View>
         ))}
       </ScrollView>
-    </Layout>
+    </Box>
   );
 }

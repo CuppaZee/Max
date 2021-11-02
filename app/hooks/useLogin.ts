@@ -5,13 +5,14 @@ import { useAtom } from "jotai";
 import * as ExpoClipboard from "expo-clipboard";
 import { otherAccountsAtom, primaryAccountAtom } from "./useToken";
 import { UserSettingsUser, useUserSettingMutation } from "./useUserSettings";
+import jwtDecode from "jwt-decode";
 const configs = {
   main: {
     redirect_uri: "https://server.cuppazee.app/auth/auth/v1",
     client_id: "91714935879f433364bff187bda66183",
   },
-  dev: {
-    redirect_uri: "http://nextserver.cuppazee.app/auth/auth/v1",
+  v3: {
+    redirect_uri: "http://192.168.0.39/auth/login",
     client_id: "628ed7ab83b0a6f59674f1bf04e4afa2",
   },
   team: {
@@ -30,11 +31,11 @@ WebBrowser.maybeCompleteAuthSession({
 
 export default function useLogin(
   path: string,
-  application: keyof typeof configs = "main"
+  application: keyof typeof configs = "v3"
 ) {
   const redirectUri =
     Platform.OS === "web"
-      ? [window.location.origin, path].filter(Boolean).join("/").replace(/\/\//g, "/")
+      ? [window.location.origin, path].filter(Boolean).join("/").replace(/([^:])\/\//g, "$1/")
       : `uk.cuppazee.paper://${path}`;
 
   var config = configs[application];
@@ -102,30 +103,45 @@ export default function useLogin(
   }, []);
 
   async function handleLogin(params: any) {
-    if (!params?.teaken) return setLoading(false);
+    if (!params?.teaken && !params?.code) return setLoading(false);
+
+    let username: string;
+    let user_id: number;
+    let cuppazee_token: string;
+
+    if (params?.teaken) {
+      user_id = Number(params.user_id);
+      username = params.username;
+      cuppazee_token = params.teaken;
+    } else {
+      const jwt = jwtDecode(params.code) as any;
+      user_id = Number(jwt.user_id);
+      username = jwt.username;
+      cuppazee_token = params.code;
+    }
 
     if (primaryAccount) {
       setOtherAccounts([
         ...otherAccounts.filter(i => i.username !== params.username),
         {
-          user_id: Number(params.user_id),
-          username: params.username,
-          cuppazee_token: params.teaken,
+          user_id,
+          username,
+          cuppazee_token,
         },
       ]);
     } else {
       setPrimaryAccount({
-        user_id: Number(params.user_id),
-        username: params.username,
-        cuppazee_token: params.teaken,
+        user_id,
+        username,
+        cuppazee_token,
       });
     }
 
     setQueuedAccounts(i => [
       ...i,
       {
-        username: params.username,
-        user_id: Number(params.user_id),
+        username,
+        user_id,
       },
     ]);
 
@@ -168,6 +184,8 @@ export default function useLogin(
             JSON.stringify({
               redirect: redirectUri,
               platform: Platform.OS,
+              application: application,
+              app: "max"
             })
           )}`,
           redirectUri
@@ -175,6 +193,7 @@ export default function useLogin(
         if (response.type !== "success") {
           setLoading(false);
         } else {
+          console.log(response.url);
           const params = Object.fromEntries(
             response.url
               .split("?")?.[1]
@@ -184,9 +203,10 @@ export default function useLogin(
           await handleLogin(params);
         }
       } catch (e) {
+        console.log("e", e);
         setLoading(false);
         if (Platform.OS === "web") {
-          alert("Something went wrong when logging in.");
+          alert("Something went wrong when logging in.!!!");
         } else {
           Alert.alert("Something went wrong when logging in.");
         }

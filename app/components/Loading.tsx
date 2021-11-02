@@ -7,7 +7,7 @@ import { ActivityIndicator, Image, Platform, View } from "react-native";
 import { QueryObserverResult } from "react-query";
 import useComponentSize from "../hooks/useComponentSize";
 import useLogin from "../hooks/useLogin";
-import { useAccounts } from "../hooks/useToken";
+import { useAccounts, useTokenResponse } from "../hooks/useToken";
 import Icon from "./Common/Icon";
 import baseURL from "../baseURL";
 import { Box, Button, Heading, Text, useColorMode, useTheme } from "native-base";
@@ -25,11 +25,7 @@ export default function Loading({
   skeleton: Skeleton,
 }: {
   data?: (QueryObserverResult & {
-    tokenStatus?: {
-      status: string;
-      user_id: string | number | undefined;
-      token?: any;
-    };
+    tokenStatus?: useTokenResponse;
   })[];
   customErrors?: any[];
   bg?: string | false;

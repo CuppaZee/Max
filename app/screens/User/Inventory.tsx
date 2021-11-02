@@ -2,7 +2,6 @@ import { RouteProp, useRoute } from "@react-navigation/native";
 import * as React from "react";
 import { StyleSheet, ScrollView, View, Platform } from "react-native";
 import { InventoryIcon } from "../../components/Inventory/Icon";
-import useCuppaZeeRequest from "../../hooks/useCuppaZeeRequest";
 import useMunzeeRequest from "../../hooks/useMunzeeRequest";
 import useTitle from "../../hooks/useTitle";
 import { useTranslation } from "react-i18next";
@@ -14,6 +13,7 @@ import { openURL } from "expo-linking";
 import { Box, Button, Checkbox, Heading, Text } from "native-base";
 import { RootStackParamList } from "../../types";
 import { useHeaderHeight } from "@react-navigation/elements";
+import useAPIData from "../../hooks/useAPIRequest";
 
 export default function PlayerInventoryScreen() {
   const [includeZeroes, setIncludeZeroes] = React.useState(false);
@@ -23,19 +23,21 @@ export default function PlayerInventoryScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "Player_Inventory">>();
   useTitle(`${route.params.username} - ${t("pages:user_inventory")}`);
   const user = useMunzeeRequest("user", { username: route.params.username });
-  const data = useCuppaZeeRequest<{ data: UserInventoryInputData }>(
-    "user/inventory",
-    { user_id: user.data?.data?.user_id },
-    user.data?.data?.user_id !== undefined,
-    user.data?.data?.user_id
-  );
+  const data = useAPIData<UserInventoryInputData>({
+    endpoint: "/user/inventory",
+    params: {},
+    user_id: user.data?.data?.user_id,
+    options: {
+      enabled: user.data?.data?.user_id !== undefined
+    }
+  })
   const db = useDB();
   const d = React.useMemo(
     () =>
       data.data?.data
         ? generateInventoryData(db, data.data.data, { hideZeroes: !includeZeroes, groupByState })
         : null,
-    [data.dataUpdatedAt, includeZeroes, groupByState]
+    [data.data, includeZeroes, groupByState, db]
   );
 
   const headerHeight = useHeaderHeight();

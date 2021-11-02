@@ -1,15 +1,15 @@
-import { useAtom } from "jotai";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  UseQueryResult,
-} from "react-query";
+import { atom, useAtom } from "jotai";
+import { useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient, UseQueryResult } from "react-query";
+import { baseAPIURL } from "../baseURLs";
 import useDB from "./useDB";
-import {settingAtom} from "./useSetting";
+import { settingAtom } from "./useSetting";
 import { primaryAccountAtom } from "./useToken";
 
-export const __internal__localSettingsAtom = settingAtom<Partial<UserSettings>>("local_settings", {});
+export const __internal__localSettingsAtom = settingAtom<Partial<UserSettings>>(
+  "local_settings",
+  {}
+);
 
 export interface UserSettingsUser {
   user_id: number;
@@ -25,16 +25,14 @@ export interface UserSettings {
   users: UserSettingsUser[];
   clans: UserSettingsClan[];
   rootCategories: string[];
-  colours: {[name: string]: string}
+  colours: { [name: string]: string };
 }
 
 const baseURL = "https://server.cuppazee.app";
 
-const getSettings = async (teaken: string, user_id: number): Promise<{ data: UserSettings }> => {
+const getSettings = async (cuppazee_token: string): Promise<{ data: UserSettings }> => {
   const response = await fetch(
-    `${baseURL}/auth/settings/v1?teaken=${encodeURIComponent(teaken)}&user_id=${encodeURIComponent(
-      user_id
-    )}`
+    `${baseAPIURL}/auth/settings/get?token=${encodeURIComponent(cuppazee_token)}`
   );
   if (!response.ok) {
     throw new Error("Expired");
@@ -44,18 +42,19 @@ const getSettings = async (teaken: string, user_id: number): Promise<{ data: Use
 };
 
 const updateSettings = async (
-  teaken: string,
-  user_id: number,
+  cuppazee_token: string,
   settings: Partial<UserSettings>
 ): Promise<{ data: boolean }> => {
-  const response = await fetch(`${baseURL}/auth/settings/save/v1`, {
-    method: "POST",
-    body: JSON.stringify({
-      teaken,
-      user_id,
-      settings,
-    }),
-  });
+  const response = await fetch(
+    `${baseAPIURL}/auth/settings/set?token=${encodeURIComponent(cuppazee_token)}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        cuppazee_token,
+        settings: JSON.stringify(settings),
+      }),
+    }
+  );
   if (!response.ok) {
     throw new Error("Expired");
   }
@@ -63,12 +62,14 @@ const updateSettings = async (
   return await response.json();
 };
 
-export function use__internal__CloudUserSettings(): (UserSettings & { query?: UseQueryResult }) | null {
+export function use__internal__CloudUserSettings():
+  | (UserSettings & { query?: UseQueryResult })
+  | null {
   const [account] = useAtom(primaryAccountAtom);
 
   const data = useQuery(
-    ["user_settings", account?.cuppazee_token, account?.user_id],
-    () => (account?.cuppazee_token ? getSettings(account.cuppazee_token, account.user_id) : null),
+    ["user_settings", account?.cuppazee_token],
+    () => (account?.cuppazee_token ? getSettings(account.cuppazee_token) : null),
     {
       enabled: account?.cuppazee_token !== undefined,
     }
@@ -99,7 +100,7 @@ export function useUserSettingMutation<T extends keyof UserSettings>(
   key: T
 ): [
   value: UserSettings[T] | null,
-  update: (value: UserSettings[T]) => void,
+  update: (value: UserSettings[T]) => Promise<void>,
   isLocal: boolean,
   makeLocal: () => void,
   makeCloud: (
@@ -107,7 +108,7 @@ export function useUserSettingMutation<T extends keyof UserSettings>(
       local: Partial<UserSettings>[T],
       cloud: Partial<UserSettings>[T]
     ) => UserSettings[T]
-  ) => void
+  ) => Promise<void>
 ] {
   const [localSettings, setLocalSettings] = useAtom(__internal__localSettingsAtom);
   const userSettings = use__internal__UserSettings();
@@ -116,18 +117,18 @@ export function useUserSettingMutation<T extends keyof UserSettings>(
 
   return [
     userSettings?.[key] ?? null,
-    value => {
-      userSettingsMutation({ ...userSettings, [key]: value });
+    async value => {
+      await userSettingsMutation({ ...userSettings, [key]: value });
     },
     !!localSettings[key],
     () => {
       setLocalSettings({ ...localSettings, [key]: userSettings?.[key] });
     },
-    mergeValues => {
+    async mergeValues => {
       const { [key]: _, ...ls } = localSettings;
       setLocalSettings(ls);
       if (mergeValues) {
-        userSettingsMutation({
+        await userSettingsMutation({
           ...userSettings,
           [key]: mergeValues(localSettings[key], cloudUserSettings?.[key]),
         });
@@ -144,7 +145,7 @@ export function use__internal__UserSettingsMutation() {
   const mutation = useMutation<{ data: boolean }, unknown, Partial<UserSettings>>(
     async settings => {
       if (account) {
-        const d = await updateSettings(account?.cuppazee_token, account.user_id, settings);
+        const d = await updateSettings(account?.cuppazee_token, settings);
         client.refetchQueries(["user_settings"]);
         return d;
       }
@@ -152,7 +153,7 @@ export function use__internal__UserSettingsMutation() {
     }
   );
 
-  return (settings: Partial<UserSettings>, forceUpdateCloud?: boolean) => {
+  return async (settings: Partial<UserSettings>, forceUpdateCloud?: boolean) => {
     const updateLocal: Partial<UserSettings> = {};
     const update: Partial<UserSettings> = {};
     for (const key of Object.keys(settings) as (keyof UserSettings)[]) {
@@ -167,7 +168,7 @@ export function use__internal__UserSettingsMutation() {
       setLocalSettings(updateLocal);
     }
     if (Object.keys(update).length > 0) {
-      mutation.mutate(update);
+      await mutation.mutateAsync(update);
     }
   };
 }
@@ -186,4 +187,15 @@ export function useRootCategories() {
     return list;
   }
   return db.categories.filter(i => i.parents.find(i => i?.id === "root")).map(i => i.id);
+}
+
+export const UsersSetAtom = atom(new Set<number>());
+
+export function UsersSetHandler() {
+  const users = useUserSetting("users");
+  const [_, setUsersSet] = useAtom(UsersSetAtom);
+  useEffect(() => {
+    setUsersSet(new Set(users?.map(i => i.user_id)));
+  }, []);
+  return null;
 }

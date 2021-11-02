@@ -10,23 +10,31 @@ import { ColorSchemeName, Platform } from "react-native";
 
 import SomewhereWithoutCoffeeScreen from "../screens/SomewhereWithoutCoffee";
 import { RootStackParamList, WrapperStackParamList } from "../types";
-import LinkingConfiguration from "./LinkingConfiguration";
+import LinkingConfiguration, { mainUser } from "./LinkingConfiguration";
 import * as Analytics from "expo-firebase-analytics";
 import lazy from "../components/lazy";
 import Sidebar from "./Sidebar";
 import { Box, HStack, useColorModeValue, useToken, VStack } from "native-base";
-import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  createNativeStackNavigator,
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
 import { HeaderTitle, LoadIcon } from "./Header";
 import Tabs from "./Tabs";
+import { useAtom } from "jotai";
+import { primaryAccountAtom } from "../hooks/useToken";
+import { createStackNavigator } from "@react-navigation/stack";
 
 // Clan
-const ClanStatsScreen = lazy(() => import("../screens/Clan/Stats"));
+// const ClanStatsScreen = lazy(() => import("../screens/Clan/Stats"));
+import ClanStatsScreen from "../screens/Clan/Stats";
 const ClanBookmarksScreen = lazy(() => import("../screens/Clan/Bookmarks"));
 const ClanRequirementsScreen = lazy(() => import("../screens/Clan/Requirements"));
 const CuppaManagerScreen = lazy(() => import("../screens/Clan/CuppaManager"));
 
 // User
-const PlayerProfileScreen = lazy(() => import("../screens/User/Profile"));
+// const PlayerProfileScreen = lazy(() => import("../screens/User/Profile"));
+import PlayerProfileScreen from "../screens/User/Profile";
 const PlayerActivityScreen = lazy(() => import("../screens/User/Activity"));
 const PlayerInventoryScreen = lazy(() => import("../screens/User/Inventory"));
 const PlayerZeeOpsScreen = lazy(() => import("../screens/User/ZeeOps"));
@@ -67,6 +75,8 @@ const TypeMunzeeScreen = lazy(() => import("../screens/Tools/Types/Type"));
 const ActivityWidgetScreen = lazy(() => import("../screens/Tools/WidgetConfigure/ActivityWidget"));
 const UniversalScreen = lazy(() => import("../screens/Tools/Universal"));
 const BlastScreen = lazy(() => import("../screens/Tools/Blast"));
+// const MoreScreen = lazy(() => import("../screens/Tools/More"));
+import MoreScreen from "../screens/Tools/More";
 
 const WelcomeScreen = lazy(() => import("../screens/Welcome"));
 
@@ -81,7 +91,8 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
     () => LinkingConfiguration(lastNotificationResponse || undefined),
     [lastNotificationResponse]
   );
-  console.log("nav");
+  const [primaryAccount] = useAtom(primaryAccountAtom);
+  mainUser.value = primaryAccount?.username ?? "__nobody__";
   return (
     <NavigationContainer
       linking={LinkingConfig}
@@ -93,12 +104,12 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
       theme={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <VStack flex={1}>
         <HStack flex={1}>
-          <Sidebar />
+          {!!primaryAccount && <Sidebar />}
           <Box flex={2}>
             <WrapperNavigator />
           </Box>
         </HStack>
-        <Tabs />
+        {!!primaryAccount && <Tabs />}
       </VStack>
     </NavigationContainer>
   );
@@ -111,7 +122,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function WrapperNavigator() {
   return (
-    <Wrapper.Navigator screenOptions={{ animation: "none", headerShown: false }}>
+    <Wrapper.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right", animationTypeForReplace: "push" }}>
+      {/* animation: "none",  */}
       <Wrapper.Screen name="__root" getId={p => (p.params as any)?.id} component={RootNavigator} />
     </Wrapper.Navigator>
   );
@@ -120,9 +132,12 @@ function WrapperNavigator() {
 function RootNavigator() {
   const darkToken = useToken("colors", "regularGray.800");
   const lightToken = useToken("colors", "regularGray.200");
+  const [primaryAccount] = useAtom(primaryAccountAtom);
   const token = useColorModeValue(lightToken, darkToken);
+  console.log("~RNav")
   return (
     <Stack.Navigator
+      initialRouteName={primaryAccount ? "Player_Profile" : "Welcome"}
       screenOptions={{
         headerStyle: {
           backgroundColor: token + (Platform.OS === "ios" ? "88" : ""),
@@ -135,93 +150,99 @@ function RootNavigator() {
         headerBlurEffect: token === darkToken ? "dark" : "light",
         headerTitle: props => <HeaderTitle title={props.children} />,
       }}>
-      <Stack.Screen name="Clan_Bookmarks" component={ClanBookmarksScreen} />
-      <Stack.Screen name="Clan_Cuppa" component={CuppaManagerScreen} />
-      <Stack.Screen name="Clan_Requirements" component={ClanRequirementsScreen} />
-      <Stack.Screen
-        getId={({ params }) => params?.clanid.toString()}
-        name="Clan_Stats"
-        component={ClanStatsScreen}
-      />
+      {primaryAccount ? (
+        <>
+          <Stack.Screen name="Clan_Bookmarks" component={ClanBookmarksScreen} />
+          <Stack.Screen name="Clan_Cuppa" component={CuppaManagerScreen} />
+          <Stack.Screen name="Clan_Requirements" component={ClanRequirementsScreen} />
+          <Stack.Screen
+            getId={({ params }) => params?.clanid.toString()}
+            name="Clan_Stats"
+            component={ClanStatsScreen}
+          />
 
-      <Stack.Screen name="Player_Profile" component={PlayerProfileScreen} />
-      <Stack.Screen
-        getId={({ params }) => params.date}
-        name="Player_Activity"
-        component={PlayerActivityScreen}
-      />
-      <Stack.Screen name="Player_Inventory" component={PlayerInventoryScreen} />
-      <Stack.Screen name="Player_ZeeOps" component={PlayerZeeOpsScreen} />
-      <Stack.Screen name="Player_Bouncers" component={PlayerBouncersScreen} />
-      <Stack.Screen
-        getId={({ params }) => params.date}
-        name="Player_Challenges"
-        component={PlayerChallengesScreen}
-      />
-      <Stack.Screen
-        getId={({ params }) => `${params.date}/${params.challenge}`}
-        name="Player_Challenge"
-        component={PlayerChallengeScreen}
-      />
-      <Stack.Screen
-        getId={({ params }) => params.category}
-        name="Player_Captures"
-        component={PlayerCapturesScreen}
-      />
-      <Stack.Screen name="Player_ClanProgress" component={PlayerClanScreen} />
-      <Stack.Screen name="Player_QRew" component={PlayerQRewScreen} />
-      <Stack.Screen name="Player_Cubimals" component={PlayerCubimalsScreen} />
-      <Stack.Screen name="Player_QRates" component={PlayerQRatesScreen} />
-      <Stack.Screen name="Player_Rooms" component={PlayerRoomsScreen} />
-      <Stack.Screen name="Player_LotterZee" component={PlayerLotterZeeScreen} />
+          <Stack.Screen name="Player_Profile" component={PlayerProfileScreen} />
+          <Stack.Screen
+            getId={({ params }) => params.date}
+            name="Player_Activity"
+            component={PlayerActivityScreen}
+          />
+          <Stack.Screen name="Player_Inventory" component={PlayerInventoryScreen} />
+          <Stack.Screen name="Player_ZeeOps" component={PlayerZeeOpsScreen} />
+          <Stack.Screen name="Player_Bouncers" component={PlayerBouncersScreen} />
+          <Stack.Screen
+            getId={({ params }) => params.date}
+            name="Player_Challenges"
+            component={PlayerChallengesScreen}
+          />
+          <Stack.Screen
+            getId={({ params }) => `${params.date}/${params.challenge}`}
+            name="Player_Challenge"
+            component={PlayerChallengeScreen}
+          />
+          <Stack.Screen
+            getId={({ params }) => params.category}
+            name="Player_Captures"
+            component={PlayerCapturesScreen}
+          />
+          <Stack.Screen name="Player_ClanProgress" component={PlayerClanScreen} />
+          <Stack.Screen name="Player_QRew" component={PlayerQRewScreen} />
+          <Stack.Screen name="Player_Cubimals" component={PlayerCubimalsScreen} />
+          <Stack.Screen name="Player_QRates" component={PlayerQRatesScreen} />
+          <Stack.Screen name="Player_Rooms" component={PlayerRoomsScreen} />
+          <Stack.Screen name="Player_LotterZee" component={PlayerLotterZeeScreen} />
 
-      <Stack.Screen
-        name="Tools_Search"
-        component={SearchScreen}
-      />
+          <Stack.Screen name="Tools_Search" component={SearchScreen} />
 
-      <Stack.Screen name="Tools_Calendar" component={CalendarScreen} />
-      <Stack.Screen name="Tools_EvoPlanner" component={EvoPlannerScreen} />
-      <Stack.Screen name="Tools_TestScan" component={TestScanScreen} />
-      <Stack.Screen name="Tools_Universal" component={UniversalScreen} />
-      <Stack.Screen name="Tools_WidgetConfigureActivityWidget" component={ActivityWidgetScreen} />
+          <Stack.Screen name="Tools_Calendar" component={CalendarScreen} />
+          <Stack.Screen name="Tools_EvoPlanner" component={EvoPlannerScreen} />
+          <Stack.Screen name="Tools_TestScan" component={TestScanScreen} />
+          <Stack.Screen name="Tools_Universal" component={UniversalScreen} />
+          <Stack.Screen
+            name="Tools_WidgetConfigureActivityWidget"
+            component={ActivityWidgetScreen}
+          />
 
-      <Stack.Screen name="Tools_Bouncers" component={BouncersScreen} />
-      <Stack.Screen name="Tools_BouncersExpiring" component={BouncersExpiringScreen} />
-      <Stack.Screen name="Tools_Nearby" component={NearbyScreen} />
-      <Stack.Screen name="Tools_BouncersMap" component={BouncersMapScreen} />
+          <Stack.Screen name="Tools_More" component={MoreScreen} />
 
-      <Stack.Screen name="Tools_Blast" component={BlastScreen} />
-      <Stack.Screen name="Tools_POIPlanner" component={POIPlannerScreen} />
-      <Stack.Screen name="Tools_DestinationPlanner" component={DestinationPlannerScreen} />
+          <Stack.Screen name="Tools_Bouncers" component={BouncersScreen} />
+          <Stack.Screen name="Tools_BouncersExpiring" component={BouncersExpiringScreen} />
+          <Stack.Screen name="Tools_Nearby" component={NearbyScreen} />
+          <Stack.Screen name="Tools_BouncersMap" component={BouncersMapScreen} />
 
-      <Stack.Screen
-        getId={({ params }) => `${params.a}/${params.b}`}
-        name="Tools_Munzee"
-        component={MunzeeScreen}
-      />
+          <Stack.Screen name="Tools_Blast" component={BlastScreen} />
+          <Stack.Screen name="Tools_POIPlanner" component={POIPlannerScreen} />
+          <Stack.Screen name="Tools_DestinationPlanner" component={DestinationPlannerScreen} />
 
-      <Stack.Screen
-        getId={({ params }) => params.category}
-        name="Tools_TypeCategory"
-        component={TypeCategoryScreen}
-      />
-      <Stack.Screen
-        getId={({ params }) => params.type}
-        name="Tools_TypeMunzee"
-        component={TypeMunzeeScreen}
-      />
+          <Stack.Screen
+            getId={({ params }) => `${params.a}/${params.b}`}
+            name="Tools_Munzee"
+            component={MunzeeScreen}
+          />
 
-      <Stack.Screen name="Tools_Credits" component={CreditsScreen} />
-      <Stack.Screen name="Tools_Donate" component={DonateScreen} />
-      <Stack.Screen name="Tools_OpenSource" component={OpenSourceScreen} />
+          <Stack.Screen
+            getId={({ params }) => params.category}
+            name="Tools_TypeCategory"
+            component={TypeCategoryScreen}
+          />
+          <Stack.Screen
+            getId={({ params }) => params.type}
+            name="Tools_TypeMunzee"
+            component={TypeMunzeeScreen}
+          />
 
-      <Stack.Screen name="Settings_Personalisation" component={PersonalisationScreen} />
-      <Stack.Screen name="Settings_Accounts" component={AccountsScreen} />
-      <Stack.Screen name="Settings_Notifications" component={NotificationScreen} />
-      <Stack.Screen name="Settings_Bookmarks" component={BookmarksScreen} />
+          <Stack.Screen name="Tools_Credits" component={CreditsScreen} />
+          <Stack.Screen name="Tools_Donate" component={DonateScreen} />
+          <Stack.Screen name="Tools_OpenSource" component={OpenSourceScreen} />
 
-      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: "Welcome" }} />
+          <Stack.Screen name="Settings_Personalisation" component={PersonalisationScreen} />
+          <Stack.Screen name="Settings_Accounts" component={AccountsScreen} />
+          <Stack.Screen name="Settings_Notifications" component={NotificationScreen} />
+          <Stack.Screen name="Settings_Bookmarks" component={BookmarksScreen} />
+        </>
+      ) : (
+        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ title: "Welcome" }} />
+      )}
 
       <Stack.Screen
         name="somewherewithoutcoffee"

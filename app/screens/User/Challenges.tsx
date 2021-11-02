@@ -40,7 +40,7 @@ export default function PlayerChallengesScreen() {
       data.data?.data
         ? ChallengesConverter(db, generateUserActivityData(db, data.data?.data, {activity: new Set(), state: new Set(), category: new Set()}, "sohcah"))
         : null,
-    [data.dataUpdatedAt]
+    [data.dataUpdatedAt, db]
   );
 
   if (!data.data || !d || !size) {
@@ -77,7 +77,7 @@ export default function PlayerChallengesScreen() {
                   style={{ flexDirection: "row", alignItems: "center", borderRadius: 8 }}>
                   <TypeImage
                     style={{ size: 48, margin: 8 }}
-                    icon={c.icon ?? c.categories[0].icon}
+                    icon={c.icon ?? c.categories[0]?.icon ?? ""}
                   />
                   <View style={{ paddingVertical: 8, flex: 1 }}>
                     <Text category="h6">{c.name}</Text>

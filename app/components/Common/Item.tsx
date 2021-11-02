@@ -13,6 +13,17 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Icon from "./Icon";
 import TypeImage from "./TypeImage";
 import { Platform } from "react-native";
+import getConfig from "../../navigation/LinkingConfiguration";
+
+function getLinkFrom(k: any, p: any = {}) {
+  if (typeof k === "string") {
+    return "/" + k.replace(/:([^/]+)/g, i => p[i.slice(1)] ?? "").replace(/[\/]+$/, "");
+  }
+  return "/" + k.path.replace(
+    /:([^/]+)/g,
+    (i: string) => k.stringify[i.slice(1)]?.(p[i.slice(1)] ?? "") ?? p[i.slice(1)] ?? ""
+  ).replace(/[\/]+$/, "");
+}
 
 export interface ItemProps {
   title: string;
@@ -79,7 +90,7 @@ export function Item(props: ItemProps) {
         _hover={{ opacity: 0.8 }}
         bg={matches ? "blue.500" : undefined}
         borderRadius={4}
-        href={Platform.OS === "web" ? (props.link as any) : undefined}>
+        href={Platform.OS === "web" ? getLinkFrom((getConfig().config?.screens.__root as any).screens[props.link[0]], props.link[1]) : undefined}>
         <HStack w="100%" alignItems="center" space={3} p={2}>
           {!!props.icon && (
             <Icon

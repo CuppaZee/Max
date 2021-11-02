@@ -20,15 +20,40 @@ import { ClanV2 } from "@cuppazee/api/clan/main";
 import { Dayjs } from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
-import useSetting, { ClanPersonalisationAtom, ClansAtom } from "../../hooks/useSetting";
+import useSetting, {
+  ClanOptions,
+  ClanPersonalisationAtom,
+  ClansAtom,
+} from "../../hooks/useSetting";
 import Icon, { IconName } from "../Common/Icon";
 import useDB from "../../hooks/useDB";
 import { NavProp } from "../../navigation";
-import {
-  Box,
-  Text
-} from "native-base";
-import { useUserSetting } from "../../hooks/useUserSettings";
+import { Box, Text } from "native-base";
+import { UsersSetAtom, useUserSetting } from "../../hooks/useUserSettings";
+import { selectAtom, useAtomValue } from "jotai/utils";
+import { atom, Atom, useAtom } from "jotai";
+
+const clanAtomCache = new Map<number, Atom<ClanOptions>>();
+
+function getClanAtom(clan_id: number) {
+  if (!clanAtomCache.has(clan_id)) {
+    const atom = selectAtom(ClansAtom, i => i[clan_id]);
+    clanAtomCache.set(clan_id, atom);
+  }
+  return clanAtomCache.get(clan_id)!;
+}
+
+export function useClanOptions(clan_id: number) {
+  const clanAtom = getClanAtom(clan_id);
+  return (
+    useAtomValue(clanAtom) ?? {
+      shadow: true,
+      level: 5,
+      share: false,
+      subtract: false,
+    }
+  );
+}
 
 const textColorCache = new Map<string, boolean>();
 
@@ -37,7 +62,7 @@ export function pickTextColor(
   lightColor: string = "#fff",
   darkColor: string = "#000"
 ) {
-  if(!textColorCache.has(bgColor)) {
+  if (!textColorCache.has(bgColor)) {
     const color = bgColor.charAt(0) === "#" ? bgColor.substring(1, 7) : bgColor;
     const r = parseInt(color.substring(0, 2), 16); // hexToR
     const g = parseInt(color.substring(2, 4), 16); // hexToG
@@ -54,6 +79,60 @@ export function pickTextColor(
   }
   return textColorCache.get(bgColor) ? darkColor : lightColor;
 }
+
+export const ClanCellStyleAtom = atom<{[key: string]: any}>({});
+
+function generateClanCellStyle(style: {
+  style: number;
+  reverse: boolean;
+  single_line: boolean;
+  full_background: boolean;
+  colours: string[];
+  edited: boolean;
+}, type: "title" | "header" | "header_stack" | "data") {
+  const fontScale = PixelRatio.getFontScale();
+
+  const isCompact = style.style >= 2;
+  const isStack = type === "title" || type === "header_stack";
+  const isSingleLine = style.single_line && !isStack;
+  const imageSize = (isSingleLine ? 0.75 : 1) * (isCompact ? 24 : 32) * fontScale;
+  const iconSize = (isSingleLine ? 16 : 24) * fontScale;
+  const iconMargin = (isCompact ? 4 : 8) * fontScale;
+
+  const height =
+    {
+      title: isCompact ? 69 : 77,
+      header_stack: isCompact ? 69 : 77,
+      header: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
+      data: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
+    }[type] * fontScale;
+  return {
+    isCompact,
+    isStack,
+    isSingleLine,
+    height,
+    imageSize,
+    iconSize,
+    iconMargin,
+    fullBackground: style.full_background,
+    colours: style.colours
+  };
+}
+
+export function ClanCellStyleHandler() {
+  const style = useAtomValue(ClanPersonalisationAtom);
+  const [_, setClanCellStyle] = useAtom(ClanCellStyleAtom);
+  React.useEffect(() => {
+    setClanCellStyle({
+      title: generateClanCellStyle(style, "title"),
+      header: generateClanCellStyle(style, "header"),
+      header_stack: generateClanCellStyle(style, "header_stack"),
+      data: generateClanCellStyle(style, "data"),
+    });
+  }, [style]);
+  return null;
+}
+
 
 function PressWrapper(props: PropsWithChildren<PressableProps>) {
   if (props.onPress) {
@@ -78,72 +157,136 @@ export interface CommonCellProps {
 const ColorStyleCache: Map<string, any> = new Map();
 
 function colorStyles(color: string) {
-  if(!ColorStyleCache.has(color)) {
+  if (!ColorStyleCache.has(color)) {
     const c = color ?? "#cccccc";
-    ColorStyleCache.set(color, StyleSheet.create({
-      BackgroundFull: {backgroundColor: c},
-      Background: {backgroundColor: c + "22"},
-    }))
+    ColorStyleCache.set(
+      color,
+      StyleSheet.create({
+        BackgroundFull: { backgroundColor: c },
+        Background: { backgroundColor: c + "22" },
+      })
+    );
   }
-  return ColorStyleCache.get(color)
+  return ColorStyleCache.get(color);
 }
 
-
-
 export const CommonCell = function (props: CommonCellProps) {
-  const [styleValue] = useSetting(ClanPersonalisationAtom);
-  const style = props.clanStyle ?? styleValue;
+  // const [styleValue] = useSetting(ClanPersonalisationAtom);
+  // const style = props.clanStyle ?? styleValue;
+
+  const {
+    isCompact,
+    isStack,
+    isSingleLine,
+    height,
+    imageSize,
+    iconSize,
+    iconMargin,
+    fullBackground,
+    colours = [],
+  } = useAtomValue(ClanCellStyleAtom)[props.type] ?? {};
+  //   useMemo(() => {
+  //     const isCompact = style.style >= 2;
+  //     const isStack = props.type === "title" || props.type === "header_stack";
+  //     const isSingleLine = style.single_line && !isStack;
+  //     const imageSize = (isSingleLine ? 0.75 : 1) * (isCompact ? 24 : 32) * fontScale;
+  //     const iconSize = (isSingleLine ? 16 : 24) * fontScale;
+  //     const iconMargin = (isCompact ? 4 : 8) * fontScale;
+
+  //     const height =
+  //       {
+  //         title: isCompact ? 69 : 77,
+  //         header_stack: isCompact ? 69 : 77,
+  //         header: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
+  //         data: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
+  //       }[props.type] * fontScale;
+  //     return { isCompact, isStack, isSingleLine, height, imageSize, iconSize, iconMargin };
+  //   }, [style.style, style.single_line, props.type]);
+
+  const wrapperBoxProps = useMemo(() => {
+    return {
+      bg: isCompact ? undefined : "regularGray.200",
+      _dark: {
+        bg: isCompact ? undefined : "regularGray.800",
+      },
+      style: [
+        isCompact ? undefined : styles.card,
+        {
+          height,
+          flexDirection: isStack ? "column" : "row",
+          alignItems: "center",
+          opacity: props.color === -1 && !fullBackground ? 0.4 : 1,
+        },
+        props.color !== undefined
+          ? colorStyles(colours[props.color])[fullBackground ? "BackgroundFull" : "Background"]
+          : undefined,
+      ],
+    };
+  }, [isCompact, isStack, props.color, fullBackground, colours]);
+
+  const textColor = useMemo(
+    () =>
+      props.color !== undefined && fullBackground
+        ? { color: pickTextColor(colours[props.color] ?? "#aaaaaa") }
+        : undefined,
+    [props.color, fullBackground, colours]
+  );
 
   const fontScale = PixelRatio.getFontScale();
 
-  const isCompact = style.style >= 2;
-  const isStack = props.type === "title" || props.type === "header_stack";
-  const isSingleLine = style.single_line && !isStack;
-  const imageSize = (isSingleLine ? 0.75 : 1) * (isCompact ? 24 : 32) * fontScale;
-  const iconSize = (isSingleLine ? 16 : 24) * fontScale;
-  const iconMargin = (isCompact ? 4 : 8) * fontScale;
-
-  const height =
-    {
-      title: isCompact ? 69 : 77,
-      header_stack: isCompact ? 69 : 77,
-      header: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
-      data: isSingleLine ? (isCompact ? 26 : 32) : isCompact ? 34 : 40,
-    }[props.type] * fontScale;
+  if (!props.onPress && !props.image && !props.icon && (isSingleLine || !props.subtitle)) {
+    return (
+      <Box {...wrapperBoxProps}>
+        <Text
+          key="_title"
+          style={[
+            textColor,
+            {
+              textAlign: props.subtitle ? "left" : "center",
+              marginLeft:
+                !!props.subtitle ||
+                !(props.color !== undefined && !isStack && !fullBackground)
+                  ? 0
+                  : -4,
+              flex: 1,
+            },
+          ]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          fontWeight={props.type !== "data" || props.titleBold ? "bold" : undefined}
+          fontSize={props.type !== "data" || props.titleBold ? "sm" : "sm"}>
+          {props.titleIcon && (
+            <Icon
+              key="_titleIcon"
+              colorBlank
+              name={props.titleIcon}
+              style={{ height: 12, width: 12 }}
+            />
+          )}
+          {props.title}
+        </Text>
+      </Box>
+    );
+  }
 
   return (
     <PressWrapper onPress={props.onPress}>
-      <Box
-        bg={isCompact ? undefined : "regularGray.200"}
-        _dark={{
-          bg: isCompact ? undefined : "regularGray.800",
-        }}
-        style={[
-          isCompact ? undefined : styles.card,
-          {
-            height,
-            flexDirection: isStack ? "column" : "row",
-            alignItems: "center",
-            opacity: props.color === -1 && !style.full_background ? 0.4 : 1,
-          },
-          props.color !== undefined ? (
-            colorStyles(style.colours[props.color])[style.full_background ? "BackgroundFull" : "Background"]
-          ) : undefined,
-        ]}
-      >
-        {props.color !== undefined && !isStack && !style.full_background && (
+      <Box {...wrapperBoxProps}>
+        {props.color !== undefined && !isStack && !fullBackground && (
           <View
+            key="_left"
             style={{
               width: 4 * fontScale,
               alignSelf: "stretch",
               borderTopLeftRadius: isCompact ? 0 : 8,
               borderBottomLeftRadius: isCompact ? 0 : 8,
-              backgroundColor: style.colours[props.color] ?? "#aaaaaa",
+              backgroundColor: colours[props.color] ?? "#aaaaaa",
             }}
           />
         )}
-        {props.image && (
+        {props.image ? (
           <Image
+            key="_image"
             source={props.image}
             style={{
               width: imageSize,
@@ -158,82 +301,63 @@ export const CommonCell = function (props: CommonCellProps) {
               margin: 4 * fontScale,
             }}
           />
-        )}
-        {props.icon && (
-          <View style={isStack ? { marginVertical: iconMargin } : {}}>
-            <Icon
-              style={{
+        ) : props.icon ? (
+          <Icon
+            key="_icon"
+            style={[
+              {
                 width: iconSize,
                 height: iconSize,
                 marginHorizontal: iconMargin,
-                color:
-                  props.color !== undefined && style.full_background
-                    ? pickTextColor(style.colours[props.color] ?? "#aaaaaa")
-                    : undefined,
-              }}
-              name={props.icon}
-            />
-          </View>
-        )}
+                marginVertical: isStack ? iconMargin : 0,
+              },
+              textColor,
+            ]}
+            name={props.icon}
+          />
+        ) : null}
         <View
+          key="_text"
           style={{
-            padding: 4,
-            paddingVertical: 0,
+            paddingHorizontal: 4,
             flex: 1,
             alignItems: isStack ? "center" : "stretch",
             maxWidth: "100%",
-          }}
-        >
+          }}>
           {props.title && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "baseline",
-                justifyContent: !!props.subtitle ? "flex-start" : "center",
-                maxWidth: "100%",
-              }}
-            >
-              <Text
-                style={[
-                  props.color !== undefined && style.full_background
-                    ? { color: pickTextColor(style.colours[props.color] ?? "#aaaaaa") }
-                    : undefined,
-                  {
-                    textAlign: !!props.subtitle ? "left" : "center",
-                    marginLeft:
-                      !!props.subtitle ||
-                      !(props.color !== undefined && !isStack && !style.full_background)
-                        ? 0
-                        : -4,
-                    flexShrink: 1,
-                  },
-                ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                fontWeight={props.type !== "data" || props.titleBold ? "bold" : undefined}
-                fontSize={props.type !== "data" || props.titleBold ? "sm" : "sm"}>
-                {props.titleIcon && (
-                  <Icon
-                    name={props.titleIcon}
-                    style={[
-                      props.color !== undefined && style.full_background
-                        ? { color: pickTextColor(style.colours[props.color] ?? "#aaaaaa") }
-                        : undefined,
-                      { height: 12, width: 12 },
-                    ]}
-                  />
-                )}
-                {props.title}
-              </Text>
-            </View>
+            <Text
+              key="_title"
+              style={[
+                textColor,
+                {
+                  textAlign: props.subtitle ? "left" : "center",
+                  marginLeft:
+                    !!props.subtitle ||
+                    !(props.color !== undefined && !isStack && !fullBackground)
+                      ? 0
+                      : -4,
+                  flexShrink: 1,
+                },
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              fontWeight={props.type !== "data" || props.titleBold ? "bold" : undefined}
+              fontSize={props.type !== "data" || props.titleBold ? "sm" : "sm"}>
+              {props.titleIcon && (
+                <Icon
+                  key="_titleIcon"
+                  colorBlank
+                  name={props.titleIcon}
+                  style={{ height: 12, width: 12 }}
+                />
+              )}
+              {props.title}
+            </Text>
           )}
           {!isSingleLine && props.subtitle && (
             <Text
-              style={
-                props.color !== undefined && style.full_background
-                  ? { color: pickTextColor(style.colours[props.color] ?? "#aaaaaa") }
-                  : undefined
-              }
+              key="_subtitle"
+              style={textColor}
               numberOfLines={1}
               ellipsizeMode="tail"
               fontSize="sm">
@@ -241,14 +365,15 @@ export const CommonCell = function (props: CommonCellProps) {
             </Text>
           )}
         </View>
-        {props.color !== undefined && isStack && !style.full_background && (
+        {props.color !== undefined && isStack && !fullBackground && (
           <View
+            key="_bottom"
             style={{
               height: 4 * fontScale,
               width: 45 * fontScale,
               borderTopLeftRadius: isCompact ? 0 : 8,
               borderBottomLeftRadius: isCompact ? 0 : 8,
-              backgroundColor: style.colours[props.color] ?? "#aaaaaa",
+              backgroundColor: colours[props.color] ?? "#aaaaaa",
             }}
           />
         )}
@@ -262,93 +387,100 @@ export interface DataCellProps {
   task_id: number;
   clan_id: number;
   requirements: ClanRequirements;
-  levelCount: number;
+  goalLevel: number;
+}
+
+function LargeDataCell(
+  props: DataCellProps & { data: { text: string; level: number | undefined } }
+) {
+  const users = useUserSetting("users");
+  const style = useAtomValue(ClanPersonalisationAtom);
+  const { t } = useTranslation();
+  const db = useDB();
+  const text = props.data.text;
+  const level = props.data.level;
+
+  return useMemo(
+    () => (
+      <CommonCell
+        type="data"
+        color={level}
+        icon={!props.user || "username" in props.user ? undefined : "shield-half-full"}
+        image={
+          !props.user || "username" in props.user
+            ? {
+                uri:
+                  props.user && "username" in props.user
+                    ? `https://munzee.global.ssl.fastly.net/images/avatars/ua${props.user.user_id.toString(
+                        36
+                      )}.png`
+                    : `https://server.cuppazee.app/requirements/${props.task_id}.png`,
+              }
+            : undefined
+        }
+        title={
+          style.reverse
+            ? `${db.getClanRequirement(props.task_id).top} ${
+                db.getClanRequirement(props.task_id).bottom
+              }`
+            : props.user && "username" in props.user
+            ? props.user.username ?? ""
+            : t("clan:group_total")
+        }
+        titleBold={users?.some(i =>
+          props.user && "user_id" in props.user
+            ? i.user_id.toString() === props.user?.user_id.toString()
+            : false
+        )}
+        subtitle={text}
+      />
+    ),
+    [level, text, users, props.user, style, props.task_id, db]
+  );
 }
 
 export function DataCell(props: DataCellProps) {
-  const users = useUserSetting("users");
-  const [options] = useSetting(ClansAtom);
-  const [style] = useSetting(ClanPersonalisationAtom);
-  const { t } = useTranslation();
-  const db = useDB();
-
-  const { level: gLevel, ...opt } = options[props.clan_id];
-  const goalLevel = Math.min(Math.max(gLevel, 0), props.levelCount);
-  let text: string;
-  let level: number | undefined;
+  const users = useAtomValue(UsersSetAtom);
+  const { subtract } = useClanOptions(props.clan_id);
+  const style = useAtomValue(ClanPersonalisationAtom);
+  const value = props.user?.requirements[props.task_id] ?? {};
+  let text: string = "-";
+  let level: number | undefined = 0;
   if (
-    props.user?.requirements[props.task_id]?.value === undefined ||
-    props.user?.requirements[props.task_id]?.value === null ||
-    Number.isNaN(props.user?.requirements[props.task_id]?.value)
+    value?.value === undefined ||
+    value?.value === null ||
+    Number.isNaN(value?.value) ||
+    !props.user
   ) {
     text = "🚫";
-  } else if (opt?.subtract) {
+    level = -1;
+  } else if (subtract) {
     text = Math.max(
       0,
       (props.requirements.tasks["username" in props.user ? "individual" : "group"][props.task_id]?.[
-        goalLevel
-      ] ?? 0) - (props.user.requirements[props.task_id].value ?? 0)
+        props.goalLevel
+      ] ?? 0) - value.value
     ).toLocaleString();
-    level =
-      (props.user?.requirements[props.task_id]?.level ?? 0) >= goalLevel
-        ? goalLevel
-        : props.user?.requirements[props.task_id]?.level === -1
-        ? -1
-        : 0;
+    level = (value.level ?? 0) >= props.goalLevel ? props.goalLevel : value?.level === -1 ? -1 : 0;
   } else {
-    text = (props.user.requirements[props.task_id].value ?? 0).toLocaleString();
-    level = props.user?.requirements[props.task_id]?.level;
+    text = value.value.toLocaleString();
+    level = value.level;
   }
 
   if (style.style === 0) {
-    return useMemo(
-      () => (
-        <CommonCell
-          type="data"
-          color={level}
-          icon={!props.user || "username" in props.user ? undefined : "shield-half-full"}
-          image={
-            !props.user || "username" in props.user
-              ? {
-                  uri:
-                    props.user && "username" in props.user
-                      ? `https://munzee.global.ssl.fastly.net/images/avatars/ua${props.user.user_id.toString(
-                          36
-                        )}.png`
-                      : `https://server.cuppazee.app/requirements/${props.task_id}.png`,
-                }
-              : undefined
-          }
-          title={
-            style.reverse
-              ? `${db.getClanRequirement(props.task_id).top} ${
-                  db.getClanRequirement(props.task_id).bottom
-                }`
-              : props.user && "username" in props.user
-              ? props.user.username ?? ""
-              : t("clan:group_total")
-          }
-          titleBold={users?.some(i =>
-            props.user && "user_id" in props.user
-              ? i.user_id.toString() === props.user?.user_id.toString()
-              : false
-          )}
-          subtitle={text}
-        />
-      ),
-      [level, text, users, props.user, style, props.task_id, db]
-    );
+    return <LargeDataCell {...props} data={{ text, level }} />;
   }
-  return useMemo(() => (
-    <CommonCell
-      type="data"
-      color={level}
-      title={text}
-      titleBold={users?.some(i =>
-        props.user && "user_id" in props.user ? i.user_id.toString() === props.user?.user_id.toString() : false
-      )}
-    />
-  ), [level, text, users, props.user, 0, 0, 0]);
+  return useMemo(
+    () => (
+      <CommonCell
+        type="data"
+        color={level}
+        title={text}
+        titleBold={users.has((props.user as any)?.user_id ?? 0)}
+      />
+    ),
+    [level, text, props.user, users]
+  );
 }
 
 export interface RequirementDataCellProps {
@@ -457,36 +589,16 @@ export type LevelCellProps = {
   level: number;
   type: "individual" | "group" | "share";
   stack?: boolean;
-  clan_id?: number;
+  clan_id: number;
   levels: number[];
 };
 
-export function LevelCell(props: LevelCellProps) {
+export function ClanLevelCell(props: LevelCellProps) {
   const { t } = useTranslation();
   const [style] = useSetting(ClanPersonalisationAtom);
   const [options, setOptions] = useSetting(ClansAtom);
   const [open, setOpen] = useState(false);
-  if (!props.clan_id) {
-    return (
-      <CommonCell
-        onPress={() => setOpen(i => !i)}
-        type={props.stack ? "header_stack" : "header"}
-        color={props.level}
-        icon={props.type === "individual" ? "account-check" : "shield-check"}
-        title={t(
-          style.single_line && !props.stack
-            ? props.type === "individual"
-              ? "clan:individual_level"
-              : props.type === "share"
-              ? "clan:share_level"
-              : "clan:group_level"
-            : "clan:level",
-          { level: props.level }
-        )}
-        subtitle={t(`clan:${props.type}` as const)}
-      />
-    );
-  }
+
   return (
     <Popover
       fullWidth
@@ -532,6 +644,32 @@ export function LevelCell(props: LevelCellProps) {
       </Box>
     </Popover>
   );
+}
+
+export function LevelCell(props: LevelCellProps) {
+  const { t } = useTranslation();
+  const [style] = useSetting(ClanPersonalisationAtom);
+  if (!props.clan_id) {
+    return (
+      <CommonCell
+        type={props.stack ? "header_stack" : "header"}
+        color={props.level}
+        icon={props.type === "individual" ? "account-check" : "shield-check"}
+        title={t(
+          style.single_line && !props.stack
+            ? props.type === "individual"
+              ? "clan:individual_level"
+              : props.type === "share"
+              ? "clan:share_level"
+              : "clan:group_level"
+            : "clan:level",
+          { level: props.level }
+        )}
+        subtitle={t(`clan:${props.type}` as const)}
+      />
+    );
+  }
+  return <ClanLevelCell {...props} />;
 }
 
 export type TitleCellProps = {
@@ -598,7 +736,7 @@ export type RequirementCellProps = {
 };
 
 export function RequirementCell(props: RequirementCellProps) {
-  const [style] = useSetting(ClanPersonalisationAtom);
+  const { reverse } = useAtomValue(ClanPersonalisationAtom);
   const g = props.requirements.group.includes(props.task_id);
   const i = props.requirements.individual.includes(props.task_id);
   const db = useDB();
@@ -612,8 +750,8 @@ export function RequirementCell(props: RequirementCellProps) {
       titleIcon={
         props.sortBy && Math.abs(props.sortBy) === props.task_id
           ? props.sortBy > 0
-            ? (`chevron-${style.reverse ? "right" : "down"}` as const)
-            : (`chevron-${style.reverse ? "left" : "up"}` as const)
+            ? (`chevron-${reverse ? "right" : "down"}` as const)
+            : (`chevron-${reverse ? "left" : "up"}` as const)
           : undefined
       }
       subtitle={db.getClanRequirement(props.task_id).bottom}
@@ -633,7 +771,9 @@ export function RewardDataCell(props: RewardDataCellProps) {
   const [style] = useSetting(ClanPersonalisationAtom);
   const { t } = useTranslation();
 
-  const count = props.rewards?.levels.slice(props.cumulative ? 0 : props.level - 1, props.level).reduce((a, b) => a + (b[props.reward_id] ?? 0), 0);
+  const count = props.rewards?.levels
+    .slice(props.cumulative ? 0 : props.level - 1, props.level)
+    .reduce((a, b) => a + (b[props.reward_id] ?? 0), 0);
 
   if (style.style === 0) {
     return (

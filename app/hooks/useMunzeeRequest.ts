@@ -56,7 +56,7 @@ export default function useMunzeeRequest<Path extends keyof Endpoints>(
   const token = useToken(user_id);
   const data = useQuery(
     ["munzee", endpoint, stringify(params), user_id],
-    () => getMunzeeData(endpoint, params, token?.token?.access_token),
+    () => getMunzeeData(endpoint, params, token?.token?.access_token ?? ""),
     {
       ...(options ?? {}),
       enabled: isFocused && (run ?? true) && token.status === "valid",

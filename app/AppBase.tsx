@@ -23,6 +23,8 @@ import "expo-firebase-analytics";
 import * as Sentry from "sentry-expo";
 import EvaWrapper from "./EvaWrapper";
 import { extendTheme, NativeBaseProvider, useColorMode } from "native-base";
+import { UsersSetHandler } from "./hooks/useUserSettings";
+import { ClanCellStyleHandler } from "./components/Clan/Cell";
 
 Sentry.init({
   dsn: "https://7823a6409bf1417dafa6f3e3ab47b6ed@o444031.ingest.sentry.io/5418530",
@@ -100,6 +102,8 @@ function AppBase() {
     <>
       <NativeBaseProvider theme={theme}>
         <ColorModeHandler />
+        <UsersSetHandler />
+        <ClanCellStyleHandler />
         <EvaWrapper>
           <Navigation key={i18n.language} colorScheme={colorScheme} />
           <StatusBar />

@@ -2,25 +2,18 @@ import { NativeStackHeaderProps } from "@react-navigation/native-stack/lib/types
 import React, { useEffect, useReducer } from "react";
 import { useIsFetching, useQueryClient } from "react-query";
 import day from "dayjs";
-import { ActivityIndicator, Platform } from "react-native";
+import { Platform } from "react-native";
 import Icon from "../components/Common/Icon";
-import { Box, Button, Heading, HStack, Text, useTheme } from "native-base";
+import { Box, Button, Heading, HStack, Text, Spinner, useTheme } from "native-base";
 
 export function LoadIcon() {
   const loading = useIsFetching();
   const queryClient = useQueryClient();
-  const theme = useTheme();
   return (
     <Button
       size="sm"
       variant="ghost"
-      startIcon={
-        loading ? (
-          <ActivityIndicator color={theme.colors.regularGray[500]} size={24} />
-        ) : (
-          <Icon style={{ height: 24 }} name="refresh" />
-        )
-      }
+      startIcon={loading ? <Spinner size="sm" /> : <Icon style={{ height: 24 }} name="refresh" />}
       onPress={() =>
         queryClient.refetchQueries({
           predicate: query => query.queryKey[0] !== "token",

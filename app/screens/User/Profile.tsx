@@ -15,6 +15,8 @@ import { RootStackParamList } from "../../types";
 import { Box, Heading, Text } from "native-base";
 import { Item } from "../../components/Common/Item";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useAtom } from "jotai";
+import { primaryAccountAtom } from "../../hooks/useToken";
 
 export const UserPagesNow = [
   {
@@ -63,11 +65,20 @@ export default function TabOneScreen() {
   const db = useDB();
   const { t } = useTranslation();
   const route = useRoute<RouteProp<RootStackParamList, "Player_Profile">>();
-  useTitle(`${route.params.username}`);
+  const nav = useNavigation<NavProp>();
+  const [primaryAccount] = useAtom(primaryAccountAtom);
+  const username = route.params?.username ?? primaryAccount?.username ?? "";
+
+  React.useEffect(() => {
+    if (!route.params?.username && primaryAccount) {
+      nav.setParams({ username });
+    }
+  }, [route.params?.username, primaryAccount]);
+  useTitle(`${username}`);
 
   const user = useMunzeeRequest(
     "user",
-    { username: route.params?.username },
+    { username: username },
     route.params?.username !== undefined
   );
   const headerHeight = useHeaderHeight();
@@ -97,7 +108,7 @@ export default function TabOneScreen() {
                 chevron
                 title={t("pages:user_activity")}
                 icon="calendar"
-                link={["Player_Activity", { username: route.params.username }]}
+                link={["Player_Activity", { username }]}
               />
               <UserActivityOverview
                 user_id={user.data.data.user_id}
@@ -174,7 +185,7 @@ export default function TabOneScreen() {
                   key={i.screen}
                   title={"title" in i ? t(`pages:${i.title}` as const) : i.nontranslatedtitle}
                   icon={i.icon}
-                  link={[`Player_${i.screen}` as const, { username: route.params.username }]}
+                  link={[`Player_${i.screen}` as const, { username }]}
                 />
               ))}
               {!!user.data?.data?.clan ? (
@@ -190,7 +201,7 @@ export default function TabOneScreen() {
                   key="Clan"
                   title={t(`pages:user_clan_progress`)}
                   icon="shield-half-full"
-                  link={["Player_ClanProgress", { username: route.params.username }]}
+                  link={["Player_ClanProgress", { username }]}
                 />
               )}
             </Box>
@@ -213,7 +224,7 @@ export default function TabOneScreen() {
                     link={[
                       "Player_Captures",
                       {
-                        username: route.params.username,
+                        username,
                         category: c.id,
                       },
                     ]}

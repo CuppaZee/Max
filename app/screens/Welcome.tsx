@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
   const [readySetting, setReadySetting] = useSetting(ReadyAtom);
   const [theme, setTheme] = useSetting(ThemeAtom);
   const [loading, setLoading] = React.useState(false);
-  const [, login, ready] = useLogin("");
+  const [, login, ready] = useLogin("welcome");
   const updatesStatusRef = React.useRef<Promise<boolean>>();
   const accounts = useAccounts();
   

@@ -41,7 +41,7 @@ export default function useCuppaZeeRequest<T = any>(
   const token = useToken(user_id);
   const data = useQuery(
     ["cuppazee", endpoint, stringify(params), user_id],
-    () => getCuppaZeeData<T>(endpoint, params, token?.token?.access_token),
+    () => getCuppaZeeData<T>(endpoint, params, token?.token?.access_token ?? ""),
     {
       ...options ?? {},
       enabled: isFocused && (run ?? true) && token.status === "valid",

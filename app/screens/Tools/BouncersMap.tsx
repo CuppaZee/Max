@@ -42,8 +42,8 @@ export default function BouncersMapScreen() {
       <AutoMap
         onPress={point => {
           const munzee = point.features?.find(i => i.source?.startsWith("bouncers"));
-          if (munzee) {
-            nav.navigate("Tools_Munzee", { a: munzee.id });
+          if (munzee?.properties?.munzee_id) {
+            nav.navigate("Tools_Munzee", { a: munzee?.properties?.munzee_id });
           }
         }}
         controls={

@@ -11,7 +11,7 @@ const dbCache: { value: CuppaZeeDB; onLoad: Set<() => void>; running: boolean } 
 
 export const dbLoadLog: string[] = [];
 
-async function loadDB2(cacheVersion: number) {
+async function loadDB(cacheVersion: number) {
   try{
     const response = await Promise.race([
       await fetch(`https://db.cuppazee.app/lzw/${cacheVersion}`),
@@ -54,7 +54,7 @@ async function loadDBBase() {
       dbLoadLog.push("No Cache Data, Continuing.")
     }
   } catch (e) { dbLoadLog.push("Failed to load from cache, Continuing.");}
-  await loadDB2(cacheVersion);
+  await loadDB(cacheVersion);
 };
 
 export default function useDB() {

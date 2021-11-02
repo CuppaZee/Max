@@ -3,9 +3,10 @@ import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { NotificationResponse } from "expo-notifications";
 import { Platform } from "react-native";
+import { primaryAccountAtom } from "../hooks/useToken";
 
 // Get Main User
-const mainUser = { value: "sohcah" };
+export const mainUser = { value: "__nobody__" };
 
 export default function getConfig(notification?: NotificationResponse): LinkingOptions<any> {
   return {
@@ -53,6 +54,8 @@ export default function getConfig(notification?: NotificationResponse): LinkingO
 
             Tools_Search: "search",
 
+            Tools_More: "more",
+            
             Tools_Calendar: "tools/calendar",
             Tools_EvoPlanner: "tools/evoplanner",
             Tools_TestScan: "tools/testscan",

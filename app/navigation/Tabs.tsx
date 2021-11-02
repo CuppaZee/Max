@@ -42,7 +42,7 @@ export default function Tabs() {
         link={["Clan_Stats", { clanid: clans?.[0]?.clan_id }]}
       />
       <TabItem checkMatch navMethod="reset" icon="shield-half-full" title="Clans" link={["Clan_Bookmarks"]} />
-      <TabItem checkMatch navMethod="reset" icon="view-grid" title="More" link={["Tools_Donate"]} />
+      <TabItem checkMatch navMethod="reset" icon="view-grid" title="More" link={["Tools_More"]} />
     </HStack>
   );
 }

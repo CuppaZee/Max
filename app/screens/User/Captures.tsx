@@ -1,10 +1,13 @@
 import { TypeHidden } from "@cuppazee/db";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { DrawerItem, Layout, Text } from "@ui-kitten/components";
+import { Box, Heading, HStack, Pressable } from "native-base";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, View } from "react-native";
 import { CapturesIcon } from "../../components/Captures/Icon";
+import { Item } from "../../components/Common/Item";
 import TypeImage from "../../components/Common/TypeImage";
 import Loading from "../../components/Loading";
 import useComponentSize from "../../hooks/useComponentSize";
@@ -58,21 +61,32 @@ export default function PlayerCapturesScreen() {
 
   const category = db.getCategory(route.params.category ?? "root");
 
+  const headerHeight = useHeaderHeight();
+
   if (!data.isFetched || !d || !category || !size) {
     return (
-      <Layout onLayout={onLayout} style={{ flex: 1 }}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        onLayout={onLayout}
+        style={{ flex: 1 }}>
         <Loading data={[data]} />
-      </Layout>
+      </Box>
     );
   }
   return (
-    <Layout onLayout={onLayout} style={{ flex: 1 }}>
+    <Box
+      bg="regularGray.100"
+      _dark={{ bg: "regularGray.900" }}
+      onLayout={onLayout}
+      style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexDirection: "row",
           alignItems: "flex-start",
           flexWrap: "wrap",
+          paddingTop: headerHeight,
         }}>
         <View style={{ width: "100%", alignItems: "center" }}>
           <View
@@ -81,43 +95,43 @@ export default function PlayerCapturesScreen() {
               maxWidth: "100%",
               padding: 4,
             }}>
-            <Layout level="3" style={{ borderRadius: 8, padding: 4 }}>
-              <Text category="h5" style={{ textAlign: "center" }}>
+            <Box
+              bg="regularGray.200"
+              _dark={{ bg: "regularGray.800" }}
+              style={{ borderRadius: 8, padding: 4 }}>
+              <Heading fontSize="lg" style={{ textAlign: "center" }}>
                 {category.name}
-              </Text>
+              </Heading>
               {category.children
                 .filter(i => i.children.length > 0)
                 .map(c => (
-                  <DrawerItem
-                    style={{ backgroundColor: "transparent" }}
-                    selected={false}
-                    title={() => (
-                      <Text style={{ flex: 1, marginLeft: 4 }} category="s1">
-                        {c.name}
-                      </Text>
-                    )}
-                    accessoryLeft={() => (
-                      <TypeImage icon={c.icon} style={{ size: 32, margin: -4 }} />
-                    )}
-                    onPress={() => nav.setParams({ category: c.id })}
+                  <Item
+                    title={c.name}
+                    typeImage={c.icon}
+                    link={["Player_Captures", { username: route.params.username, category: c.id }]}
                   />
                 ))}
-            </Layout>
+            </Box>
           </View>
         </View>
         {category.children
           .filter(i => i.types.length > 0)
           .map(i => (
             <View style={{ flexGrow: 1, width: 400, maxWidth: "100%", padding: 4 }}>
-              <Layout level="3" style={{ borderRadius: 8, padding: 4 }}>
-                <Text category="h5" style={{ textAlign: "center" }}>
+              <Box
+                bg="regularGray.200"
+                _dark={{ bg: "regularGray.800" }}
+                style={{ borderRadius: 8, padding: 4 }}>
+                <Heading fontSize="lg" style={{ textAlign: "center" }}>
                   {i.name}
-                </Text>
+                </Heading>
                 {i.groups.map(g => (
                   <>
-                    {!!g.title && <Text category="h6" style={{ textAlign: "center" }}>
-                      {g.title}
-                    </Text>}
+                    {!!g.title && (
+                      <Heading fontSize="md" style={{ textAlign: "center" }}>
+                        {g.title}
+                      </Heading>
+                    )}
                     <View
                       style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
                       {g.types
@@ -129,10 +143,10 @@ export default function PlayerCapturesScreen() {
                     </View>
                   </>
                 ))}
-              </Layout>
+              </Box>
             </View>
           ))}
       </ScrollView>
-    </Layout>
+    </Box>
   );
 }

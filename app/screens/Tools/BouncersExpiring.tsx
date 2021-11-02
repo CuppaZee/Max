@@ -9,17 +9,19 @@ import useDB from "../../hooks/useDB";
 import { NavProp } from "../../navigation";
 import { Box, Text, Input, Heading, HStack, VStack, Pressable } from "native-base";
 import { useHeaderHeight } from "@react-navigation/elements";
+import useAPIData from "../../hooks/useAPIRequest";
 
 export default function BouncersExpiringScreen() {
   const { t } = useTranslation();
   const db = useDB();
   useTitle(`Bouncing Soon`);
-  const bouncers = useCuppaZeeRequest<{
-    data: any;
-    endpointsDown: { label: string; endpoint: string }[];
-  }>("bouncers/expiring", {}, true, undefined, undefined, {
-    refetchInterval: 300000,
-    keepPreviousData: true,
+  const bouncers = useAPIData<[hostName: string, icon: string, expires: number, hostID: string, key: number, bouncerName?: string, bouncerOwner?: string][]>({
+    endpoint: "/bouncer/expiring",
+    params: {},
+    options: {
+      refetchInterval: 300000,
+      keepPreviousData: true,
+    }
   });
   const [player, setPlayer] = React.useState("");
   const [type, setType] = React.useState("");
@@ -37,7 +39,7 @@ export default function BouncersExpiringScreen() {
 
   return (
     <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} style={{ padding: 4, paddingTop: 4 + headerHeight, flex: 1 }}>
-      {bouncers.data?.endpointsDown
+      {/* {bouncers.data?.endpointsDown
         .filter(i => i.endpoint.startsWith("/munzee/specials"))
         .map(endpoint => (
           <Box style={{ margin: 4, width: "100%" }}>
@@ -57,7 +59,7 @@ export default function BouncersExpiringScreen() {
               </Heading>
             </Box>
           </Box>
-        ))}
+        ))} */}
       <VStack p={2} space={1} style={{ width: 400, maxWidth: "100%", alignSelf: "center" }}>
         <Heading fontSize="md">{t("search:player")}</Heading>
         <Input
@@ -84,10 +86,10 @@ export default function BouncersExpiringScreen() {
         windowSize={2}
         data={
           bouncers.data?.data
-            .filter((i: any) => i[2] * 1000 > Date.now() && i[2] * 1000 < Date.now() + 300000)
-            .sort((a: any, b: any) => a[2] - b[2])
-            .filter((i: any) => !type || i[1].includes(typeS))
-            .filter((i: any) => !player || i[6]?.toLowerCase().includes(playerS)) ?? []
+            ?.filter(i => i[2] * 1000 > Date.now() && i[2] * 1000 < Date.now() + 300000)
+            .sort((a, b) => a[2] - b[2])
+            .filter(i => !type || i[1].includes(typeS))
+            .filter(i => !player || i[6]?.toLowerCase().includes(playerS)) ?? []
         }
         keyExtractor={i => i[4].toString()}
         renderItem={({ item, index }) => (

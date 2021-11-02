@@ -16,8 +16,10 @@ import { NavProp } from "../../navigation";
 import { RootStackParamList } from "../../types";
 import { ClanPersonalisationModal } from "../Settings/Personalisation";
 import { useHeaderHeight } from "@react-navigation/elements";
+import ClanStatsCard from "../../components/Clan/StatsV2";
 
 export default function ClanStatsScreen2() {
+  console.log("~CStats")
   const [style] = useSetting(ClanPersonalisationAtom);
   const scrollViewController = useSyncScrollViewController();
   const route = useRoute<RouteProp<RootStackParamList, "Clan_Stats">>();
@@ -29,7 +31,7 @@ export default function ClanStatsScreen2() {
       ).game_id
     : new GameID().game_id;
   const clan_id = Number(route.params.clanid);
-  const clan_data = useMunzeeRequest("clan/v2", { clan_id });
+  const clan_data = useMunzeeRequest("clan/v2", { clan_id }, undefined, undefined, true);
   const headerHeight = useHeaderHeight();
   useTitle(`${clan_data.data?.data?.details?.name ?? clan_id}`);
   return (
@@ -41,16 +43,16 @@ export default function ClanStatsScreen2() {
           id="clan_stats_customisation"
           tip="There are a lot of options to make Clan Stats your own in the Personalisation settings"
         />
-        <ClanStatsTable
+        <ClanStatsCard
           clan_id={clan_id}
           game_id={game_id}
           scrollViewController={style.reverse ? undefined : scrollViewController}
         />
-        <ClanRequirementsTable
+        {/* <ClanRequirementsTable
           clan_id={clan_id}
           game_id={game_id}
           scrollViewController={style.reverse ? undefined : scrollViewController}
-        />
+        /> */}
         <Select
           style={{ margin: 4 }}
           value={game_id.toString()}

@@ -16,6 +16,8 @@ import { Box, Heading, Text } from "native-base";
 import { NavProp } from "../../navigation";
 import { RootStackParamList } from "../../types";
 import dayjs from "dayjs";
+import useAPIData from "../../hooks/useAPIRequest";
+import { useHeaderHeight } from "@react-navigation/elements";
 
 type Bouncer = NonNullable<UserDeploys["response"]["data"]>["munzees"][0] & {
   bouncer?: MunzeeSpecialBouncer & { hash: string };
@@ -43,20 +45,23 @@ export default function PlayerBouncersScreen() {
     { username: route.params?.username },
     route.params?.username !== undefined
   );
-  const data = useCuppaZeeRequest<{
-    data: Bouncer[];
-    endpointsDown: { label: string; endpoint: string }[];
-  }>(
-    "user/bouncers",
-    {
-      user_id: user.data?.data?.user_id,
+  const data = useAPIData<{ bouncers: Bouncer[] }>({
+    endpoint: "/user/bouncers",
+    params: { user_id: user.data?.data?.user_id },
+    options: {
+      enabled: user.data?.data?.user_id !== undefined,
     },
-    user.data?.data?.user_id !== undefined
-  );
+  });
 
+  const headerHeight = useHeaderHeight();
+  
   if (!data.data || !size) {
     return (
-      <Box bg="regularGray.100" _dark={{ bg: "regularGray.900" }} style={{ flex: 1 }} onLayout={onLayout}>
+      <Box
+        bg="regularGray.100"
+        _dark={{ bg: "regularGray.900" }}
+        style={{ flex: 1 }}
+        onLayout={onLayout}>
         <Loading data={[user, data]} />
       </Box>
     );
@@ -67,8 +72,8 @@ export default function PlayerBouncersScreen() {
       _dark={{ bg: "regularGray.900" }}
       onLayout={onLayout}
       style={{ flex: 1, flexDirection: "row" }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4 }}>
-        {data.data?.endpointsDown
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 4, paddingTop: headerHeight + 4 }}>
+        {/* {data.data?.endpointsDown
           .filter(i => i.endpoint.startsWith("/munzee/specials"))
           .map(endpoint => (
             <Box style={{ padding: 4 }}>
@@ -88,7 +93,7 @@ export default function PlayerBouncersScreen() {
                 </Heading>
               </Box>
             </Box>
-          ))}
+          ))} */}
         <Box
           bg="regularGray.200"
           _dark={{ bg: "regularGray.800" }}
@@ -102,7 +107,7 @@ export default function PlayerBouncersScreen() {
             }}>
             <Icons
               icons={Object.keys(
-                data.data.data.reduce((a, b) => ({ ...a, [db.strip(b.pin_icon)]: 1 }), {} as any)
+                data.data.data?.bouncers.reduce((a, b) => ({ ...a, [db.strip(b.pin_icon)]: 1 }), {} as any)
               )}
             />
             <Source
@@ -110,7 +115,7 @@ export default function PlayerBouncersScreen() {
               type="geojson"
               data={{
                 type: "FeatureCollection",
-                features: data.data.data
+                features: data.data.data?.bouncers
                   .filter(i => i.bouncer)
                   .map(i => ({
                     type: "Feature",
@@ -122,7 +127,7 @@ export default function PlayerBouncersScreen() {
                       icon: db.strip(i.pin_icon),
                       id: i.munzee_id,
                     },
-                  })),
+                  })) ?? [],
               }}>
               <Layer
                 id="bouncers_symbols"
@@ -139,7 +144,7 @@ export default function PlayerBouncersScreen() {
           </AutoMap>
         </Box>
         <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-          {data.data.data.map(i => (
+          {data.data.data?.bouncers.map(i => (
             <Pressable
               style={{
                 width: 400,

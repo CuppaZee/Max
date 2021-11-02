@@ -1,5 +1,5 @@
 export type RootStackParamList = {
-  Player_Profile: { username: string };
+  Player_Profile: { username?: string };
   Player_Activity: { username: string; date?: string };
   Player_Inventory: { username: string };
   Player_Challenges: { username: string; date?: string };
@@ -19,6 +19,7 @@ export type RootStackParamList = {
   Clan_Bookmarks: { year?: number; month?: number };
   Clan_Stats: { clanid: number; year?: number; month?: number };
 
+  Tools_More: undefined;
   Tools_Search: undefined;
   Tools_Donate: undefined;
   Tools_Calendar: undefined;
